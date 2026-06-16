@@ -1,0 +1,24 @@
+{
+  "name": "family-scribble",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A real-time multiplayer drawing & guessing game for family. skribbl.io-inspired.",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n SERVER,CLIENT -c green,cyan \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm --workspace server run dev",
+    "dev:client": "npm --workspace client run dev",
+    "build": "npm --workspace client run build",
+    "typecheck": "npm --workspace server run typecheck && npm --workspace client run typecheck"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "overrides": {
+    "ws": "^8.21.0",
+    "shell-quote": "^1.8.4"
+  }
+}

@@ -1,0 +1,913 @@
+/*
+ * global.css — base, mobile-first styles.
+ *
+ * "Mobile-first" = design for a phone by default; everything uses comfortable
+ * touch sizes. We keep colors in CSS variables so re-theming later is one edit.
+ */
+
+:root {
+  --bg: #1f2a44;
+  --bg-2: #26335280;
+  --panel: #2b3a5e;
+  --accent: #ffd23f;
+  --accent-ink: #1f2a44;
+  --text: #f5f7fb;
+  --muted: #aab4cf;
+  --online: #36d399;
+  --offline: #f87272;
+  --danger: #f87272;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1 {
+  color: var(--accent);
+  margin: 0;
+  text-align: center;
+  font-size: 1.9rem;
+}
+
+/* --- shared building blocks ---------------------------------------------- */
+
+button {
+  font-size: 1.05rem;
+  font-weight: 700;
+  padding: 0.85rem 1.25rem;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  min-height: 48px; /* finger-friendly */
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+button.primary {
+  width: 100%;
+  background: var(--accent);
+}
+
+button.secondary {
+  background: #5a9bff;
+  color: white;
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 2px solid #ffffff22;
+}
+
+.text-input {
+  width: 100%;
+  font-size: 1.1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 2px solid #ffffff22;
+  background: var(--bg-2);
+  color: var(--text);
+  min-height: 48px;
+}
+
+.text-input::placeholder {
+  color: var(--muted);
+}
+
+.hint {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+.hint.error {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.hint.offline {
+  color: var(--accent);
+}
+
+.hint.notice {
+  color: var(--text);
+  background: var(--panel);
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* --- Home screen --------------------------------------------------------- */
+
+.home {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.join-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.code-input {
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  text-align: center;
+  font-weight: 700;
+}
+
+.join-row .secondary {
+  flex: 0 0 auto;
+}
+
+/* --- Room list (network discovery) --------------------------------------- */
+
+.room-list h2 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.room-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.room-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--bg-2);
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+}
+
+.room-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.room-code {
+  letter-spacing: 0.15em;
+}
+
+.room-host {
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-count {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.room-item .secondary {
+  padding: 0.5rem 0.9rem;
+  min-height: 40px;
+}
+
+/* --- Checkbox row -------------------------------------------------------- */
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.checkbox-row input {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+}
+
+/* --- Avatar picker ------------------------------------------------------- */
+
+.avatar-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-2);
+  padding: 1rem;
+  border-radius: 16px;
+}
+
+.avatar-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  max-width: 240px;
+}
+
+.part-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.part-label {
+  text-align: center;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.arrow {
+  background: var(--panel);
+  color: var(--text);
+  padding: 0.4rem;
+  min-height: 44px;
+}
+
+.randomize {
+  margin-top: 0.25rem;
+}
+
+/* --- Lobby --------------------------------------------------------------- */
+
+.lobby {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.lobby-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.lobby-label {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.8rem;
+}
+
+.code-chip {
+  position: relative;
+  font-size: 2rem;
+  letter-spacing: 0.25em;
+  background: var(--accent);
+  color: var(--accent-ink);
+  padding: 0.6rem 1.5rem;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.copy-hint {
+  font-size: 0.7rem;
+  letter-spacing: normal;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.lobby-players h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem;
+}
+
+.lobby-players .count {
+  background: var(--panel);
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.player-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-2);
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+}
+
+.player-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.you-tag {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.badge-host {
+  font-size: 1.2rem;
+}
+
+.kick-btn {
+  background: transparent;
+  color: var(--danger);
+  border: 2px solid var(--danger);
+  min-height: 32px;
+  min-width: 32px;
+  padding: 0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.lobby-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* --- Draw board (canvas + toolbar) --------------------------------------- */
+
+.lobby-sketchpad h2 {
+  font-size: 1.1rem;
+  margin: 0 0 0.25rem;
+}
+
+.draw-board {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.draw-canvas {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  background: #fff;
+  border-radius: 12px;
+  border: 2px solid #ffffff22;
+  /* Stop the page from scrolling/zooming while drawing on touch screens. */
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: var(--bg-2);
+  padding: 0.6rem;
+  border-radius: 12px;
+}
+
+.palette {
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  gap: 4px;
+}
+
+.swatch {
+  padding: 0;
+  min-height: 0;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  border: 2px solid #00000033;
+}
+
+.swatch.selected {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.tool-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sizes,
+.actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.size-btn {
+  background: var(--panel);
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+}
+
+.size-btn.selected {
+  outline: 3px solid var(--accent);
+}
+
+.size-dot {
+  display: block;
+  background: var(--text);
+  border-radius: 50%;
+  max-width: 28px;
+  max-height: 28px;
+}
+
+.tool-btn {
+  background: var(--panel);
+  color: var(--text); /* SVG icons use currentColor, so this makes them visible */
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+}
+
+.tool-btn.selected {
+  background: var(--accent);
+  color: var(--accent-ink); /* dark icon on the bright selected button */
+}
+
+/* --- Modal popup --------------------------------------------------------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  z-index: 100;
+  animation: fade-in 0.15s ease-out;
+}
+
+.modal-card {
+  background: var(--panel);
+  border-radius: 16px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  animation: pop-in 0.18s ease-out;
+}
+
+.modal-title {
+  margin: 0;
+  color: var(--accent);
+  font-size: 1.2rem;
+}
+
+.modal-message {
+  margin: 0;
+  line-height: 1.4;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+/* --- Settings panel ------------------------------------------------------ */
+
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--bg-2);
+  padding: 0.75rem;
+  border-radius: 12px;
+}
+
+.settings-panel.readonly {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.setting-label {
+  color: var(--muted);
+}
+
+.setting-number {
+  width: 84px;
+  font-size: 1rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  border: 2px solid #ffffff22;
+  background: var(--bg);
+  color: var(--text);
+  text-align: center;
+}
+
+.custom-words {
+  width: 100%;
+  min-height: 64px;
+  resize: vertical;
+  font-size: 0.95rem;
+  padding: 0.6rem;
+  border-radius: 10px;
+  border: 2px solid #ffffff22;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* --- Game screen --------------------------------------------------------- */
+
+.game {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0.75rem 0.9rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.wordmark {
+  font-weight: 800;
+  color: var(--accent);
+  /* long-press target — disable text selection so holding doesn't select it */
+  user-select: none;
+  cursor: pointer;
+}
+
+.game-header .round {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.game-header .timer {
+  font-weight: 800;
+  font-size: 1.3rem;
+  min-width: 2ch;
+  text-align: center;
+}
+
+.game-header .timer.low {
+  color: var(--danger);
+}
+
+.word-slot {
+  text-align: center;
+  letter-spacing: 0.15em;
+  font-size: 1.4rem;
+  font-weight: 700;
+  min-height: 1.6em;
+}
+
+.word-slot .masked.dim {
+  color: var(--muted);
+}
+
+.canvas-area {
+  position: relative;
+}
+
+.canvas-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(31, 42, 68, 0.82);
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 1rem;
+}
+
+.canvas-overlay-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  max-height: 100%;
+  overflow: auto;
+}
+
+.word-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.word-choices .primary {
+  width: auto;
+}
+
+.reveal-word {
+  margin: 0;
+  color: var(--accent);
+  font-size: 1.8rem;
+}
+
+.reveal-gains,
+.final-ranking {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.final-ranking {
+  counter-reset: rank;
+}
+
+.final-ranking li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  min-width: 200px;
+}
+
+.final-ranking li::before {
+  counter-increment: rank;
+  content: counter(rank) ".";
+  color: var(--muted);
+}
+
+.gameover-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+/* --- Scoreboard ---------------------------------------------------------- */
+
+.scoreboard {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-2);
+  padding: 0.3rem 0.6rem;
+  border-radius: 10px;
+}
+
+.score-row.drawing {
+  outline: 2px solid var(--accent);
+}
+
+.score-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.guessed-tick {
+  color: var(--online);
+  font-weight: 800;
+}
+
+.score-points {
+  font-weight: 700;
+  min-width: 3ch;
+  text-align: right;
+}
+
+/* --- Chat ---------------------------------------------------------------- */
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.chat-messages {
+  height: 140px;
+  overflow-y: auto;
+  background: var(--bg-2);
+  border-radius: 10px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.92rem;
+}
+
+.chat-msg.correct {
+  color: var(--online);
+  font-weight: 700;
+}
+.chat-msg.close {
+  color: var(--accent);
+}
+.chat-msg.system {
+  color: var(--accent);
+  font-style: italic;
+}
+.chat-msg.insider {
+  color: var(--muted);
+}
+
+.chat-form {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.chat-form input {
+  flex: 1;
+  font-size: 1rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  border: 2px solid #ffffff22;
+  background: var(--bg-2);
+  color: var(--text);
+  min-height: 44px;
+}
+
+.chat-form .secondary {
+  min-width: 0;
+  padding: 0.6rem 1rem;
+}
+
+.leave-btn {
+  align-self: center;
+}
+
+/* --- Admin (godmode) console --------------------------------------------- */
+
+.admin-card {
+  max-width: 460px;
+  text-align: left;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.admin-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.close-x {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+}
+
+.admin-unlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-panel h4 {
+  margin: 1rem 0 0.4rem;
+  color: var(--muted);
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.admin-actions .secondary {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 0.5rem 0.7rem;
+}
+
+.admin-players {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.admin-player-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  background: var(--bg-2);
+  padding: 0.5rem;
+  border-radius: 10px;
+}
+
+.ap-name {
+  font-weight: 600;
+}
+
+.ap-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ap-controls button {
+  min-width: 40px;
+  min-height: 38px;
+  padding: 0 0.4rem;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.ap-score {
+  width: 70px;
+  min-height: 38px;
+  text-align: center;
+  border-radius: 8px;
+  border: 2px solid #ffffff22;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.danger-text {
+  color: var(--danger) !important;
+}
+
+/* --- larger screens: a little breathing room ----------------------------- */
+@media (min-width: 640px) {
+  h1 {
+    font-size: 2.4rem;
+  }
+}

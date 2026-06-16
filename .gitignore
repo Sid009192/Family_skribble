@@ -1,0 +1,35 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+
+# TypeScript incremental build cache (from `tsc -b`)
+*.tsbuildinfo
+
+# local-only env overrides (Vite convention)
+*.local
+
+# Windows OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# secrets — NEVER commit the admin key
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+
+# editor / OS
+.DS_Store
+.vscode/
+.idea/
+
+skribble.io/
+CLAUDE.md
+.claude/

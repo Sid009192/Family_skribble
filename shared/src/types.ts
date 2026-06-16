@@ -68,6 +68,8 @@ export type RoomPhase = "lobby" | "choosing" | "drawing" | "reveal" | "gameover"
 
 /** Host-configurable game settings. */
 export interface Settings {
+  /** Max number of players allowed in the room. */
+  maxPlayers: number;
   /** How many rounds (one round = everyone draws once). */
   rounds: number;
   /** Seconds each drawer gets. */
@@ -83,6 +85,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  maxPlayers: 8,
   rounds: 3,
   drawTime: 80,
   wordChoiceCount: 3,
@@ -93,6 +96,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 /** Allowed ranges for the numeric settings (server enforces these). */
 export const SETTINGS_LIMITS = {
+  maxPlayers: { min: 2, max: MAX_PLAYERS },
   rounds: { min: 1, max: 10 },
   drawTime: { min: 15, max: 240 },
   wordChoiceCount: { min: 1, max: 5 },

@@ -1,14 +1,26 @@
 /**
- * Lobby.tsx — the waiting room: room code, players, settings, sketchpad, start.
- * The host edits settings + starts; others see them read-only and wait.
+ * Lobby.tsx — pre-game waiting room, laid out per `hsot_settings.png`.
+ *
+ *   ┌─ lobby-stack (one continuous panel, no internal gaps) ───────────┐
+ *   │  TopBar          white background                                │
+ *   │  Settings        glass-morphism (translucent white + blur)       │
+ *   │  Start | Invite  white background                                │
+ *   │  Chat input      white background, centred placeholder           │
+ *   └──────────────────────────────────────────────────────────────────┘
+ *   ┌─ players-chat-split ─────────────────────────────────────────────┐
+ *   │  Players (left)   |   Chat messages (right, white)               │
+ *   └──────────────────────────────────────────────────────────────────┘
+ *
+ * Long-press the WAITING label = admin unlock. After verification the cog
+ * appears in the top bar and tapping it reopens the admin panel.
  */
 
 import { useState } from "react";
-import { useLongPress } from "../hooks/useLongPress";
 import type { RoomApi } from "../useRoom";
 import { PlayerList } from "../components/PlayerList";
-import { DrawBoard } from "../components/DrawBoard";
-import { SettingsPanel } from "../components/SettingsPanel";
+import { SettingsGrid, CustomWordsSection } from "../components/SettingsPanel";
+import { TopBar } from "../components/TopBar";
+import { ChatInput, ChatMessages } from "../components/Chat";
 
 interface Props {
   api: RoomApi;
@@ -18,7 +30,6 @@ interface Props {
 
 export function Lobby({ api, meId, onOpenAdmin }: Props) {
   const room = api.room;
-  const longPress = useLongPress(onOpenAdmin);
   const [copied, setCopied] = useState(false);
   if (!room) return null;
 
@@ -34,53 +45,83 @@ export function Lobby({ api, meId, onOpenAdmin }: Props) {
 
   return (
     <main className="lobby">
-      <header className="lobby-header">
-        <span className="wordmark" {...longPress}>
-          Agarwal Family Skribbl
-        </span>
-        <span className="lobby-label">Room code</span>
-        <button className="code-chip" onClick={copyCode} title="Tap to copy">
-          {room.code}
-          <span className="copy-hint">{copied ? "Copied!" : "Tap to copy"}</span>
-        </button>
-      </header>
-
-      <section className="lobby-players">
-        <h2>
-          Players <span className="count">{room.players.length}</span>
-        </h2>
-        <PlayerList
-          players={room.players}
-          hostId={room.hostId}
-          meId={meId}
-          canKick={isHost}
-          onKick={api.kick}
+      <div className="lobby-stack">
+        <TopBar
+          centerText="WAITING"
+          timer={0}
+          round={room.round || 1}
+          totalRounds={room.settings.rounds}
+          isAdmin={api.isAdmin}
+          onLongPressCenter={onOpenAdmin}
+          onCogTap={onOpenAdmin}
         />
-      </section>
 
-      <section className="lobby-settings">
-        <h2>Settings</h2>
-        <SettingsPanel settings={room.settings} editable={isHost} onChange={api.updateSettings} />
-      </section>
+        <div className="settings-section">
+          <SettingsGrid
+            settings={room.settings}
+            editable={isHost}
+            onChange={api.updateSettings}
+          />
+        </div>
 
-      <section className="lobby-sketchpad">
-        <h2>Sketchpad</h2>
-        <p className="hint">Doodle together while you wait.</p>
-        <DrawBoard drawable />
-      </section>
+        {/* Custom words breaks out of the glass panel: full lobby width, flush
+            white textarea, edge-to-edge. */}
+        <div className="custom-words-strip">
+          <CustomWordsSection
+            settings={room.settings}
+            editable={isHost}
+            onChange={api.updateSettings}
+          />
+        </div>
 
-      <div className="lobby-actions">
-        {isHost ? (
-          <button className="primary" onClick={api.startGame} disabled={!canStart}>
-            {canStart ? "Start game" : "Need 2+ players"}
-          </button>
-        ) : (
-          <p className="hint">Waiting for the host to start…</p>
+        {isHost && (
+          <div className="lobby-actions">
+            <button
+              className="primary start-btn"
+              onClick={api.startGame}
+              disabled={!canStart}
+            >
+              {canStart ? "Start!" : "Need 2+ players"}
+            </button>
+            <button
+              type="button"
+              className="secondary invite-btn"
+              onClick={copyCode}
+              title="Copy room code"
+            >
+              <img src="/img/link.svg" alt="" className="invite-link-icon" />
+              {copied ? "Copied!" : "Invite"}
+            </button>
+          </div>
         )}
-        <button className="ghost" onClick={api.leaveRoom}>
-          Leave room
-        </button>
+
+        <div className="lobby-chat-input-wrap">
+          <ChatInput onSend={api.sendChat} placeholder="Chat with the room…" />
+        </div>
       </div>
+
+      <section className="players-chat-split">
+        <div className="players-pane">
+          <PlayerList
+            players={room.players}
+            hostId={room.hostId}
+            meId={meId}
+            canKick={isHost || api.isAdmin}
+            onKick={api.kick}
+          />
+        </div>
+        <div className="chat-pane">
+          <ChatMessages messages={api.messages} />
+        </div>
+      </section>
+
+      {!isHost && (
+        <p className="hint waiting-hint">Waiting for the host to start…</p>
+      )}
+
+      <button className="ghost leave-btn" onClick={api.leaveRoom}>
+        Leave room
+      </button>
     </main>
   );
 }

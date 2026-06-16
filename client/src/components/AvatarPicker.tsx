@@ -1,12 +1,13 @@
 /**
- * AvatarPicker.tsx — customize your avatar before joining (skribbl-style).
+ * AvatarPicker.tsx — customize your avatar (skribbl-faithful).
  *
- * The avatar sits in the middle with a column of "‹" arrows on the left and "›"
- * arrows on the right. Each of the three rows controls one feature, in the
- * order eyes → mouth → colour. A die in the corner randomizes everything.
+ * Layout: avatar in the middle, three "‹" arrows on the left and three "›"
+ * arrows on the right (one row per feature: eyes → mouth → colour). A small
+ * die in the corner randomizes all three.
  *
- * It's a "controlled component": the parent owns the avatar value and passes it
- * in with an `onChange`, so there's a single source of truth (a key React habit).
+ * Arrows + die are the actual skribbl sprite GIFs the user supplied. The arrow
+ * is a 2×2 sprite (left / right × normal / hover) — we point the same image
+ * with different `background-position` for each state.
  */
 
 import { AVATAR_OPTIONS } from "@shared/types";
@@ -18,7 +19,7 @@ interface Props {
   onChange: (next: AvatarType) => void;
 }
 
-// The three features, top-to-bottom, with their option counts.
+// Top-to-bottom order requested by the user.
 const PARTS = [
   { key: "eyes", label: "eyes", count: AVATAR_OPTIONS.eyes },
   { key: "mouth", label: "mouth", count: AVATAR_OPTIONS.mouths },
@@ -26,7 +27,6 @@ const PARTS = [
 ] as const;
 
 export function AvatarPicker({ value, onChange }: Props) {
-  // Cycle one part forward/backward, wrapping around (no out-of-range cells).
   function cycle(part: keyof AvatarType, delta: number, count: number) {
     const next = (((value[part] + delta) % count) + count) % count;
     onChange({ ...value, [part]: next });
@@ -34,6 +34,14 @@ export function AvatarPicker({ value, onChange }: Props) {
 
   return (
     <div className="avatar-customizer">
+      <button
+        type="button"
+        className="randomize-die"
+        onClick={() => onChange(randomAvatar())}
+        aria-label="randomize avatar"
+        title="Randomize"
+      />
+
       <div className="arrows left">
         {PARTS.map((p) => (
           <button
@@ -42,13 +50,11 @@ export function AvatarPicker({ value, onChange }: Props) {
             className="arrow"
             onClick={() => cycle(p.key, -1, p.count)}
             aria-label={`previous ${p.label}`}
-          >
-            ‹
-          </button>
+          />
         ))}
       </div>
 
-      <Avatar avatar={value} size={120} />
+      <Avatar avatar={value} />
 
       <div className="arrows right">
         {PARTS.map((p) => (
@@ -58,21 +64,9 @@ export function AvatarPicker({ value, onChange }: Props) {
             className="arrow"
             onClick={() => cycle(p.key, 1, p.count)}
             aria-label={`next ${p.label}`}
-          >
-            ›
-          </button>
+          />
         ))}
       </div>
-
-      <button
-        type="button"
-        className="randomize-die"
-        onClick={() => onChange(randomAvatar())}
-        aria-label="randomize avatar"
-        title="Randomize"
-      >
-        🎲
-      </button>
     </div>
   );
 }

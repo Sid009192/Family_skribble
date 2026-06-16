@@ -96,6 +96,11 @@ function broadcastRoomList() {
   io.emit("roomList", listPublicRooms());
 }
 
+/** Send a `system` chat message to a room (e.g. host promotion notice). */
+function broadcastSystem(code: string, text: string) {
+  io.to(code).emit("chat", { kind: "system", name: "", text });
+}
+
 /**
  * Remove a player from a room and notify everyone. Used by both host-kick and
  * admin-kick (permission is checked by the caller, not here).
@@ -104,7 +109,7 @@ function kickFromRoom(code: string, targetId: string, reason: string) {
   const room = getRoom(code);
   if (!room || !room.players.some((p) => p.id === targetId)) return;
 
-  const updated = removePlayer(code, targetId);
+  const result = removePlayer(code, targetId);
 
   const targetSocket = io.sockets.sockets.get(targetId);
   if (targetSocket) {
@@ -113,8 +118,11 @@ function kickFromRoom(code: string, targetId: string, reason: string) {
     targetSocket.data.roomCode = undefined;
   }
 
-  if (updated) {
-    io.to(code).emit("roomState", updated);
+  if (result) {
+    io.to(code).emit("roomState", result.room);
+    if (result.promotedHostName) {
+      broadcastSystem(code, `${result.promotedHostName} is now the room owner!`);
+    }
     onPlayerLeft(code, targetId); // let the game react (drawer left, etc.)
   } else {
     deleteCanvas(code);
@@ -332,13 +340,16 @@ io.on("connection", (socket) => {
   function handleLeave() {
     const code = socket.data.roomCode;
     if (!code) return;
-    const room = removePlayer(code, socket.id);
+    const result = removePlayer(code, socket.id);
     socket.leave(code);
     socket.data.roomCode = undefined;
-    if (room) {
+    if (result) {
       // Room still exists: broadcast the updated list, and let the game engine
       // react (e.g. skip the turn if the drawer left, or end if too few remain).
-      io.to(code).emit("roomState", room);
+      io.to(code).emit("roomState", result.room);
+      if (result.promotedHostName) {
+        broadcastSystem(code, `${result.promotedHostName} is now the room owner!`);
+      }
       onPlayerLeft(code, socket.id);
     } else {
       // Room is now empty: free its canvas + game memory.

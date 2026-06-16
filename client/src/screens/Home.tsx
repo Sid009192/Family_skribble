@@ -1,15 +1,26 @@
 /**
- * Home.tsx — the landing screen: pick a name + avatar, then create or join
- * (by code, or from the live network room list). Remembers your name + avatar.
+ * Home.tsx — the landing screen, redesigned to match skribbl.io's layout.
+ *
+ * Top-to-bottom on the panel:
+ *   1. Rainbow "Agarwal Skribbl" logo (long-press = admin console).
+ *   2. Decorative row of 8 sample avatars.
+ *   3. Name input + Privacy pill (Private / Public).
+ *   4. Avatar customizer (eyes / mouth / colour arrows + die).
+ *   5. Big green "Join" button — opens the Join modal (code + room list).
+ *   6. Blue "Create Private Room" button.
+ *
+ * Name + avatar persist via localStorage between sessions.
  */
 
 import { useEffect, useState } from "react";
-import { NAME_MAX, NAME_MIN, ROOM_CODE_LENGTH } from "@shared/types";
+import { NAME_MAX, NAME_MIN } from "@shared/types";
 import type { Avatar as AvatarType, RoomSummary } from "@shared/types";
 import type { JoinResult } from "@shared/events";
 import { AvatarPicker } from "../components/AvatarPicker";
 import { randomAvatar } from "../components/Avatar";
-import { RoomList } from "../components/RoomList";
+import { CharacterRow } from "../components/CharacterRow";
+import { JoinModal } from "../components/JoinModal";
+import { PrivacyToggle } from "../components/PrivacyToggle";
 import { Modal } from "../components/Modal";
 import { useLongPress } from "../hooks/useLongPress";
 import { loadPrefs, savePrefs } from "../prefs";
@@ -24,7 +35,7 @@ interface Props {
   onOpenAdmin: () => void;
 }
 
-// Load any saved name/avatar once, falling back to a random avatar.
+// Load any saved prefs once; fall back to a random avatar for first-timers.
 const saved = loadPrefs();
 
 export function Home({
@@ -39,20 +50,18 @@ export function Home({
   const longPress = useLongPress(onOpenAdmin);
   const [name, setName] = useState(saved?.name ?? "");
   const [avatar, setAvatar] = useState<AvatarType>(saved?.avatar ?? randomAvatar());
-  const [code, setCode] = useState("");
-  const [isPublic, setIsPublic] = useState(true);
+  const [privacy, setPrivacy] = useState<"private" | "public">("private");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false);
 
-  // Persist name + avatar whenever they change, so next session remembers them.
   useEffect(() => {
     savePrefs({ name, avatar });
   }, [name, avatar]);
 
   const trimmedName = name.trim();
   const nameOk = trimmedName.length >= NAME_MIN;
-  const canCreate = connected && nameOk && !busy;
-  const canJoinCode = canCreate && code.trim().length === ROOM_CODE_LENGTH;
+  const canAct = connected && nameOk && !busy;
 
   async function run(action: () => Promise<JoinResult>) {
     setError(null);
@@ -60,72 +69,69 @@ export function Home({
     const res = await action();
     setBusy(false);
     if (!res.ok) setError(res.error ?? "Something went wrong.");
+    return res;
   }
 
   return (
     <main className="home">
-      <header className="brand" {...longPress}>
-        <h1 className="brand-title">Agarwal Family Skribbl</h1>
-        <p className="brand-tag">draw • guess • argue • repeat</p>
+      <header className="logo-big" {...longPress}>
+        <img src="/img/logo.gif" alt="Agarwal Skribbl" />
       </header>
 
-      <AvatarPicker value={avatar} onChange={setAvatar} />
+      <CharacterRow />
 
-      <input
-        className="text-input"
-        type="text"
-        placeholder="Enter your name"
-        value={name}
-        maxLength={NAME_MAX}
-        onChange={(e) => setName(e.target.value)}
-        spellCheck={false}
-      />
+      <div className="landing-card">
+        <div className="name-row">
+          <input
+            className="text-input"
+            type="text"
+            placeholder="Enter your name"
+            value={name}
+            maxLength={NAME_MAX}
+            onChange={(e) => setName(e.target.value)}
+            spellCheck={false}
+          />
+          <PrivacyToggle value={privacy} onChange={setPrivacy} />
+        </div>
 
-      <RoomList
-        rooms={roomList}
-        canJoin={canCreate}
-        onJoin={(c) => run(() => onJoin(c, trimmedName, avatar))}
-      />
+        <AvatarPicker value={avatar} onChange={setAvatar} />
 
-      <div className="join-row">
-        <input
-          className="text-input code-input"
-          type="text"
-          placeholder="ROOM CODE"
-          value={code}
-          maxLength={ROOM_CODE_LENGTH}
-          onChange={(e) => setCode(e.target.value.toUpperCase())}
-          spellCheck={false}
-          autoCapitalize="characters"
-        />
         <button
-          className="secondary"
-          onClick={() => run(() => onJoin(code, trimmedName, avatar))}
-          disabled={!canJoinCode}
+          className="primary big-action"
+          onClick={() => setJoinOpen(true)}
+          disabled={!canAct}
         >
-          Join
+          Join!
         </button>
+
+        <button
+          className="secondary big-action"
+          onClick={() =>
+            run(() => onCreate(trimmedName, avatar, privacy === "public"))
+          }
+          disabled={!canAct}
+        >
+          Create Private Room
+        </button>
+
+        {!connected && <p className="hint offline">Connecting to server…</p>}
+        {error && <p className="hint error">{error}</p>}
       </div>
 
-      <button
-        className="primary"
-        onClick={() => run(() => onCreate(trimmedName, avatar, isPublic))}
-        disabled={!canCreate}
-      >
-        Create Room
-      </button>
-
-      <label className="checkbox-row">
-        <input
-          type="checkbox"
-          checked={isPublic}
-          onChange={(e) => setIsPublic(e.target.checked)}
+      {joinOpen && (
+        <JoinModal
+          roomList={roomList}
+          canJoin={canAct}
+          onJoin={async (code) => {
+            const res = await run(() => onJoin(code, trimmedName, avatar));
+            // Only close on success — failed joins stay in the modal so the
+            // user can see the error and try a different room/code.
+            if (res.ok) setJoinOpen(false);
+            return res;
+          }}
+          onClose={() => setJoinOpen(false)}
         />
-        Show my room on the network (others can join without a code)
-      </label>
-
-      {!connected && <p className="hint offline">Connecting to server…</p>}
-      {error && <p className="hint error">{error}</p>}
+      )}
 
       {notice && <Modal message={notice} onClose={onDismissNotice} />}
     </main>

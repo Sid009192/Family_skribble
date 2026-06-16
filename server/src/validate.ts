@@ -103,6 +103,10 @@ export function cleanSettings(current: Settings, update: SettingsUpdate): Settin
   };
 
   return {
+    maxPlayers:
+      update.maxPlayers === undefined
+        ? current.maxPlayers
+        : clampInt(update.maxPlayers, SETTINGS_LIMITS.maxPlayers, current.maxPlayers),
     rounds:
       update.rounds === undefined
         ? current.rounds

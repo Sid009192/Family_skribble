@@ -39,12 +39,9 @@ body,
 
 body {
   background-color: var(--bg);
-  /* A faint doodle overlay gives the skribbl playful feel without their assets. */
-  background-image: radial-gradient(
-    rgba(255, 255, 255, 0.06) 1.5px,
-    transparent 1.5px
-  );
-  background-size: 26px 26px;
+  /* The actual skribbl doodle tile — repeats seamlessly behind every screen. */
+  background-image: url("/img/background.png");
+  background-repeat: repeat;
   color: var(--text);
   -webkit-tap-highlight-color: transparent;
 }
@@ -56,44 +53,27 @@ h1 {
   font-size: 1.9rem;
 }
 
-/* --- Brand (landing title) ----------------------------------------------- */
+/* --- Logo (landing) ------------------------------------------------------ */
 
-.brand {
-  text-align: center;
-  user-select: none; /* it's the long-press target for the admin console */
+/* Sizes copied verbatim from skribbl's mobile rules:
+ *   width: 95vw; max-width: 65vh; margin-top: 6vh; margin-bottom: 4vh;
+ * No pixel cap — letting it grow as tall phones get taller is exactly what
+ * makes skribbl's logo feel "right" on a phone. */
+.logo-big {
+  display: block;
+  margin: 6vh auto 4vh;
+  width: 95vw;
+  max-width: 65vh;
+  user-select: none; /* long-press target for the admin console */
   cursor: pointer;
 }
 
-.brand-title {
-  margin: 0;
-  font-weight: 900;
-  font-size: 2.4rem;
-  line-height: 1.05;
-  letter-spacing: 0.5px;
-  /* Rainbow lettering, clipped to the text, like skribbl's logo. */
-  background: linear-gradient(
-    90deg,
-    #ff5a5f,
-    #ffb400,
-    #ffe14d,
-    #53e237,
-    #2c8de7,
-    #a06cff,
-    #ff7ac0
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-stroke: 2px var(--panel-border);
-  filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.35));
-}
-
-.brand-tag {
-  margin: 0.25rem 0 0;
-  color: var(--muted);
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+.logo-big img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.25));
+  -webkit-user-drag: none;
 }
 
 /* --- shared building blocks ---------------------------------------------- */
@@ -103,9 +83,9 @@ button {
   font-weight: 800;
   padding: 0.85rem 1.25rem;
   border: none;
-  border-radius: 12px;
+  border-radius: 3px; /* skribbl's --BORDER_RADIUS */
   cursor: pointer;
-  min-height: 48px; /* finger-friendly */
+  min-height: 40px; /* still finger-friendly without being chunky */
   color: var(--accent-ink);
   background: var(--accent);
   font-family: inherit;
@@ -152,17 +132,23 @@ button.ghost {
 
 .text-input {
   width: 100%;
-  font-size: 1.1rem;
-  padding: 0.85rem 1rem;
-  border-radius: 12px;
-  border: 2px solid #ffffff22;
-  background: var(--bg-2);
-  color: var(--text);
-  min-height: 48px;
+  font-size: 1.05rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 3px;
+  border: 2px solid var(--panel-border);
+  background: #ffffff;
+  color: #111;
+  min-height: 40px;
+  font-family: inherit;
 }
 
 .text-input::placeholder {
-  color: var(--muted);
+  color: #888;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: #56b2fd;
 }
 
 .hint {
@@ -188,18 +174,70 @@ button.ghost {
   font-weight: 600;
 }
 
-/* --- Home screen --------------------------------------------------------- */
+/* --- Home screen (skribbl-faithful landing) ------------------------------ */
 
+/* Landing follows skribbl's mobile rule: font-size scales with vh so every
+ * internal vh-based length tracks the viewport. Width = 95vw with a 55vh cap
+ * (matches skribbl's `.panels` mobile rule). */
 .home {
-  max-width: 460px;
+  font-size: 2vh;
+  width: 95vw;
+  max-width: 55vh;
   margin: 0 auto;
-  padding: 1.5rem 1.25rem 2.5rem;
+  padding: 0 0 2vh;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
   align-items: stretch;
 }
 
+/* Strip of sample avatars under the logo. Faces are 8vh so the row scales
+ * with the phone, matching skribbl. */
+.character-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.4vh;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  margin: 0 0 1.5vh;
+  filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.25));
+}
+
+.character-row .avatar {
+  width: 8vh;
+  height: 8vh;
+}
+
+/* Main form panel = skribbl's `.panel`. Solid darker-blue with 0.92 alpha
+ * so the body doodles do NOT show through — the user called out the previous
+ * see-through look as wrong. Padding 1.75vh matches skribbl mobile. */
+.landing-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25vh;
+  background: rgba(8, 36, 129, 0.92);
+  padding: 1.75vh;
+  border-radius: 3px;
+  border: 2px solid var(--panel-border);
+}
+
+/* Name input + privacy slider share one row, like skribbl's name + language.
+ * Skribbl mobile: input 65%, side-field 35% — same proportions here. */
+.name-row {
+  display: flex;
+  gap: 0.625vh;
+  align-items: stretch;
+}
+
+.name-row .text-input {
+  flex: 1 1 65%;
+  min-width: 0;
+  height: 4.25vh;
+  min-height: 0;
+  padding: 0 0.8rem;
+  font-size: 1em;
+}
+
+/* Skribbl-style code input (still used inside JoinModal). */
 .join-row {
   display: flex;
   gap: 0.5rem;
@@ -214,6 +252,26 @@ button.ghost {
 
 .join-row .secondary {
   flex: 0 0 auto;
+}
+
+/* Skribbl mobile sizes (vh-based so they scale with the phone):
+ *   .button-play  → height 7vh, font-size 2em
+ *   .button-create → height 5vh, font-size 1.2em, margin-top 1.25vh */
+.big-action.primary {
+  height: 7vh;
+  font-size: 2em;
+  font-weight: 800;
+  padding: 0;
+  min-height: 0;
+}
+
+.big-action.secondary {
+  height: 5vh;
+  font-size: 1.2em;
+  font-weight: 700;
+  padding: 0;
+  margin-top: 1.25vh;
+  min-height: 0;
 }
 
 /* --- Room list (network discovery) --------------------------------------- */
@@ -273,22 +331,90 @@ button.ghost {
   min-height: 40px;
 }
 
-/* --- Checkbox row -------------------------------------------------------- */
+/* --- Privacy pill (replaces the public/private checkbox) ----------------- */
 
-.checkbox-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
+/* Privacy slider — one click flips Private ↔ Public.
+ *
+ * The container has two dim "ghost" labels (one per side) showing what each
+ * half *would* be. A single coloured thumb sits on the active half, opaque,
+ * with the active label inside it. Tapping anywhere toggles, and the thumb
+ * slides — smooth, subtle, matches the skribbl theme. */
+.privacy-slider {
+  position: relative;
+  flex: 1 1 35%;
+  min-height: 0;
+  height: 4.25vh;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid var(--panel-border);
+  border-radius: 3px;
   color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1.3;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.62em;
+  overflow: hidden;
+  cursor: pointer;
 }
 
-.checkbox-row input {
-  width: 22px;
-  height: 22px;
-  flex: 0 0 auto;
-  accent-color: var(--accent);
+/* The two dim labels sit half-and-half behind the thumb. */
+.ps-ghost {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.55;
+  pointer-events: none;
+}
+.ps-left {
+  left: 0;
+}
+.ps-right {
+  right: 0;
+}
+
+/* Hide the ghost behind the active thumb so it doesn't double up. */
+.privacy-slider.private .ps-left,
+.privacy-slider.public .ps-right {
+  opacity: 0;
+}
+
+/* Coloured thumb — slides between left and right with a snappy ease. */
+.ps-thumb {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  text-shadow: 1px 1px 0 #00000033;
+  transition: left 0.22s cubic-bezier(0.4, 1.4, 0.5, 1), background-color 0.22s ease;
+  border-radius: 2px;
+  gap: 0.25rem;
+}
+
+.privacy-slider.private .ps-thumb {
+  left: 0;
+  background-color: var(--green);
+}
+
+.privacy-slider.public .ps-thumb {
+  left: 50%;
+  background-color: #ee9631; /* skribbl's --COLOR_PANEL_FOCUS */
+}
+
+.privacy-slider:hover .ps-thumb {
+  filter: brightness(1.05);
+}
+
+.privacy-slider:active .ps-thumb {
+  transform: translateY(1px);
 }
 
 /* --- Avatar (layered sprite atlases) ------------------------------------- */
@@ -309,37 +435,59 @@ button.ghost {
   image-rendering: auto;
 }
 
-/* --- Avatar customizer (skribbl-style arrows + die) ---------------------- */
+/* --- Avatar customizer (skribbl-faithful: sprite arrows + die) ----------- */
 
 .avatar-customizer {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  background: var(--bg-2);
-  padding: 0.75rem 1rem;
-  border-radius: 16px;
-  border: 2px solid var(--panel-border);
+  gap: 1vh;
+  background: rgba(0, 0, 0, 0.1);
+  padding: 1.25vh;
+  margin: 1.25vh 0;
+  border-radius: 3px;
+}
+
+/* The avatar inside the customizer = 15vh × 15vh on mobile (skribbl literal). */
+.avatar-customizer .avatar {
+  width: 15vh;
+  height: 15vh;
 }
 
 .avatar-customizer .arrows {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.55rem;
 }
 
+/* The arrow GIF is a 2×2 sprite: cols = left/right, rows = normal/hover. */
 .avatar-customizer .arrow {
-  background: var(--panel);
-  color: var(--text);
-  min-width: 42px;
-  min-height: 42px;
+  background-color: transparent;
+  background-image: url("/img/arrow.gif");
+  background-size: 200%;
+  background-repeat: no-repeat;
+  width: 5vh;
+  height: 5vh;
+  min-width: 0;
+  min-height: 0;
   padding: 0;
-  border-radius: 10px;
-  font-size: 1.4rem;
-  line-height: 1;
-  display: grid;
-  place-items: center;
+  border: none;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.15));
+  transition: transform 0.08s ease;
+}
+
+.avatar-customizer .arrows.left .arrow {
+  background-position: 0 0;
+}
+.avatar-customizer .arrows.left .arrow:hover {
+  background-position: 100% 0;
+}
+.avatar-customizer .arrows.right .arrow {
+  background-position: 0 100%;
+}
+.avatar-customizer .arrows.right .arrow:hover {
+  background-position: 100% 100%;
 }
 
 .avatar-customizer .arrow:active:not(:disabled) {
@@ -348,75 +496,347 @@ button.ghost {
 
 .randomize-die {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  min-width: 36px;
-  min-height: 36px;
+  top: 1.25vh;
+  right: 1.25vh;
+  width: 5vh;
+  height: 5vh;
+  min-width: 0;
+  min-height: 0;
   padding: 0;
-  font-size: 1.2rem;
-  background: transparent;
-  border-radius: 10px;
+  background-color: transparent;
+  background-image: url("/img/randomize.gif");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: none;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-/* --- Lobby --------------------------------------------------------------- */
+.randomize-die:hover {
+  opacity: 1;
+  transform: rotate(-12deg) scale(1.05);
+}
 
+/* --- Lobby (skribbl-faithful host settings layout) ---------------------- */
+/*
+ * Visual stack (no internal gaps — children butt up to each other):
+ *   white  topbar
+ *   glass  settings (translucent white + backdrop-blur over the doodle bg)
+ *   white  Start | Invite row
+ *   white  chat input
+ * Then a separate panel below: players (left) + chat messages (right, white).
+ */
+
+/* Lobby flows edge-to-edge per user request — no horizontal margins, no
+ * max-width. Cleaner & matches skribbl's mobile layout where the panel hits
+ * the screen edges. Lobby is itself a flex column with no gaps between
+ * children; each child carries its own background. */
 .lobby {
-  max-width: 460px;
-  margin: 0 auto;
-  padding: 1.5rem 1.25rem 2.5rem;
+  font-size: 1.65vh;
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
 }
 
-.lobby-header {
+.lobby-stack {
   display: flex;
   flex-direction: column;
+  border: none;
+  border-radius: 0;
+}
+
+/* Top bar: clock+timer (left) | WAITING (centre) | cog (right). White strip
+ * flush to the edges; tight padding; smaller fonts to match skribbl. */
+.topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 0.4rem;
+  padding: 4px 8px;
+  background: #ffffff;
+  color: #1d2a4a;
 }
 
-.lobby-label {
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 0.8rem;
-}
-
-.code-chip {
-  position: relative;
-  font-size: 2rem;
-  letter-spacing: 0.25em;
-  background: var(--accent);
-  color: var(--accent-ink);
-  padding: 0.6rem 1.5rem;
-  border-radius: 14px;
+.topbar-left {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+}
+
+/* Clock icon + tiny black timer number overlaid on the dial. */
+.topbar-clock-wrap {
+  position: relative;
+  width: 3.6vh;
+  height: 3.6vh;
+}
+
+.topbar-clock {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  display: block;
+}
+
+.topbar-timer {
+  position: absolute;
+  inset: 32% 0 0 0;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.85em;
+  color: #111;
+  letter-spacing: 0;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.topbar-round {
+  font-size: 0.62em;
+  font-weight: 800;
+  color: #1d2a4a;
+  margin-top: 1px;
+}
+
+/* WAITING is lighter + smaller — closer to skribbl's understated header. */
+.topbar-center {
+  font-weight: 700;
+  font-size: 0.95em;
+  letter-spacing: 0.22em;
+  text-align: center;
+  user-select: none;
+  cursor: default;
+  color: #444;
+}
+
+.topbar-right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.topbar-cog {
+  width: 3.6vh;
+  height: 3.6vh;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  background-color: transparent;
+  background-image: url("/img/cog.gif");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: none;
+  filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.3));
+  transition: transform 0.15s ease;
+  border-radius: 0;
+}
+
+.topbar-cog:hover {
+  transform: rotate(30deg);
+}
+
+/* Glass-morphism settings panel — slate-grey translucent (matches the
+ * darker frosted look in the original skribbl screenshot). Flows edge-to-
+ * edge; padding inside controls the grid's breathing room. */
+.settings-section {
+  background: rgba(60, 72, 96, 0.55);
+  backdrop-filter: blur(10px) saturate(110%);
+  -webkit-backdrop-filter: blur(10px) saturate(110%);
+  padding: 6px 10px;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 10px;
+}
+
+.setting-row {
+  display: grid;
+  grid-template-columns: 1.8em 1fr 2.8em;
   align-items: center;
+  gap: 0.3rem;
+  min-height: 2.6vh;
 }
 
-.copy-hint {
-  font-size: 0.7rem;
-  letter-spacing: normal;
-  font-weight: 600;
-  opacity: 0.7;
+.setting-icon {
+  width: 1.5em;
+  height: 1.5em;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.3));
 }
 
-.lobby-players h2 {
+.setting-label {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.8em;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.setting-number {
+  width: 100%;
+  font-size: 0.8em;
+  padding: 1px 0.3rem;
+  border-radius: 2px;
+  border: 1px solid var(--panel-border);
+  background: #ffffff;
+  color: #111;
+  text-align: center;
+  font-family: inherit;
+  font-weight: 700;
+  min-height: 0;
+  height: 2.6vh;
+}
+
+/* Custom words strip — full-page width, flush to the edges. White textarea
+ * sits directly on the lobby (no surrounding white frame). */
+.custom-words-strip {
+  background: transparent;
+  padding: 0;
+}
+
+.custom-words-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 10px;
+  background: rgba(60, 72, 96, 0.55);
+  backdrop-filter: blur(10px) saturate(110%);
+  -webkit-backdrop-filter: blur(10px) saturate(110%);
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+  font-size: 0.85em;
+}
+
+.custom-words-label {
+  font-size: 1em;
+}
+
+.custom-only-toggle {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 1.1rem;
-  margin: 0 0 0.5rem;
+  gap: 0.35rem;
+  font-size: 0.85em;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
 }
 
-.lobby-players .count {
-  background: var(--panel);
-  border-radius: 999px;
-  padding: 0.1rem 0.6rem;
-  font-size: 0.9rem;
-  color: var(--muted);
+.custom-only-toggle input {
+  width: 13px;
+  height: 13px;
+  accent-color: var(--accent);
+}
+
+/* Textarea spans the FULL lobby width (edge-to-edge), white bg, no border. */
+.custom-words {
+  width: 100%;
+  display: block;
+  min-height: 4.5vh;
+  resize: vertical;
+  font-size: 0.78em;
+  padding: 4px 10px;
+  border-radius: 0;
+  border: none;
+  background: #ffffff;
+  color: #888;
+  font-family: inherit;
+  margin: 0;
+}
+
+.custom-words:focus {
+  color: #111;
+  outline: none;
+}
+
+/* Start + Invite — flush. No white padding around them. They sit directly,
+ * h-to-h, no border, no margin. */
+.lobby-actions {
+  display: grid;
+  grid-template-columns: 2.4fr 1fr;
+  gap: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.start-btn,
+.invite-btn {
+  height: 4.2vh;
+  min-height: 30px;
+  font-size: 1em;
+  padding: 0;
+  border-radius: 0;
+}
+
+.invite-btn {
+  font-size: 0.85em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+}
+
+.invite-link-icon {
+  width: 0.9em;
+  height: 0.9em;
+  filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.25));
+}
+
+/* Chat input row — flush. No white padding either. The input itself fills. */
+.lobby-chat-input-wrap {
+  background: transparent;
+  padding: 0;
+}
+
+.lobby-chat-input-wrap .chat-form input {
+  text-align: center;
+  border-radius: 0;
+  border: none;
+  border-top: 1px solid var(--panel-border);
+  border-bottom: 1px solid var(--panel-border);
+  min-height: 3.4vh;
+  font-size: 0.85em;
+  color: #888;
+}
+
+.lobby-chat-input-wrap .chat-form input:focus {
+  color: #111;
+}
+
+/* The split fills the rest of the viewport so the chat panel reaches the
+ * bottom of the screen. flex-grow:1 inside the lobby-flex-column gives it
+ * all remaining space (header/settings/actions take the top portion). */
+.players-chat-split {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  min-height: 26vh;
+}
+
+/* Left pane: doodle bg shows through, rows are compact white tiles. */
+.players-pane {
+  background: transparent;
+  padding: 4px 4px 4px 4px;
+}
+
+/* Right pane: solid white, extends to the bottom of the viewport. */
+.chat-pane {
+  background: #ffffff;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-pane .chat-messages {
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 .player-list {
@@ -425,56 +845,133 @@ button.ghost {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 3px;
 }
 
+/* Compact player row — smaller everything, matches original's tight rows. */
 .player-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1.7em 1fr auto auto;
   align-items: center;
-  gap: 0.75rem;
-  background: var(--bg-2);
-  padding: 0.5rem 0.75rem;
-  border-radius: 12px;
+  gap: 0.35rem;
+  background: #ffffff;
+  color: #111;
+  padding: 3px 5px;
+  border-radius: 2px;
+}
+
+.rank-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  gap: 1px;
+}
+
+.rank-chip {
+  font-weight: 800;
+  font-size: 0.78em;
+  color: #1d2a4a;
+}
+
+/* Owner crown sits below the rank chip — small. */
+.owner-badge {
+  width: 1.1em;
+  height: 1.1em;
+  object-fit: contain;
+  image-rendering: pixelated;
+  flex: 0 0 auto;
+}
+
+.player-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+  text-align: center;
 }
 
 .player-name {
-  flex: 1;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.78em;
+  color: #2c8de7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .you-tag {
-  color: var(--muted);
+  color: #666;
   font-weight: 400;
 }
 
-.badge-host {
-  font-size: 1.2rem;
+.player-points {
+  font-size: 0.64em;
+  color: #555;
+  font-weight: 700;
+}
+
+/* Avatar cell — slightly smaller than before. */
+.avatar-cell {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+}
+
+.avatar-cell .avatar {
+  width: 100%;
+  height: 100%;
+}
+
+/* Leader crown sits on the LEFT side of the avatar's head, smaller, with
+ * the same -15° tilt the user wanted. Sized to roughly half the avatar. */
+.leader-crown {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 18px;
+  height: 18px;
+  transform: rotate(-20deg);
+  filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.25));
+  pointer-events: none;
 }
 
 .kick-btn {
   background: transparent;
   color: var(--danger);
-  border: 2px solid var(--danger);
-  min-height: 32px;
-  min-width: 32px;
+  border: 1px solid var(--danger);
+  min-height: 20px;
+  min-width: 20px;
   padding: 0;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: 2px;
+  font-size: 0.7em;
   line-height: 1;
 }
 
-.lobby-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.waiting-hint {
+  text-align: center;
+  font-style: italic;
+  margin: 6px;
+  font-size: 0.85em;
+}
+
+.leave-btn {
+  position: fixed;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8em;
+  padding: 4px 10px;
+  min-height: 26px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  z-index: 50;
 }
 
 /* --- Draw board (canvas + toolbar) --------------------------------------- */
-
-.lobby-sketchpad h2 {
-  font-size: 1.1rem;
-  margin: 0 0 0.25rem;
-}
 
 .draw-board {
   display: flex;
@@ -626,57 +1123,13 @@ button.ghost {
   }
 }
 
-/* --- Settings panel ------------------------------------------------------ */
-
-.settings-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  background: var(--bg-2);
-  padding: 0.75rem;
-  border-radius: 12px;
-}
-
+/* Non-host read-only summary (the panel itself is styled in the lobby block). */
 .settings-panel.readonly {
-  flex-direction: row;
+  display: flex;
   flex-wrap: wrap;
   gap: 0.4rem 0.9rem;
   color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.setting-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.setting-label {
-  color: var(--muted);
-}
-
-.setting-number {
-  width: 84px;
-  font-size: 1rem;
-  padding: 0.4rem 0.5rem;
-  border-radius: 8px;
-  border: 2px solid #ffffff22;
-  background: var(--bg);
-  color: var(--text);
-  text-align: center;
-}
-
-.custom-words {
-  width: 100%;
-  min-height: 64px;
-  resize: vertical;
-  font-size: 0.95rem;
-  padding: 0.6rem;
-  border-radius: 10px;
-  border: 2px solid #ffffff22;
-  background: var(--bg);
-  color: var(--text);
+  font-size: 0.85em;
 }
 
 /* --- Game screen --------------------------------------------------------- */
@@ -856,52 +1309,85 @@ button.ghost {
   gap: 0.4rem;
 }
 
+/* Message list — used by both the live game (chat at bottom) and the lobby
+ * (lives inside the .chat-pane right column). Newest message renders at the
+ * top; we auto-scroll to keep it in view. Normal user messages alternate
+ * white / light-grey rows (the .odd modifier is added by Chat.tsx). */
 .chat-messages {
-  height: 140px;
+  flex: 1 1 auto;
+  min-height: 14vh;
   overflow-y: auto;
-  background: var(--bg-2);
-  border-radius: 10px;
-  padding: 0.5rem;
+  background: transparent;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  font-size: 0.92rem;
+  gap: 0;
+  font-size: 0.82em;
+}
+
+.chat-msg {
+  background: #ffffff;
+  color: #111;
+  padding: 0.25rem 0.5rem;
+  font-weight: 600;
+}
+
+.chat-msg.odd {
+  background: #f0f0f0; /* skribbl's alternating row tint */
+}
+
+.chat-msg b {
+  margin-right: 0.15em;
 }
 
 .chat-msg.correct {
-  color: var(--online);
-  font-weight: 700;
-}
-.chat-msg.close {
-  color: var(--accent);
-}
-.chat-msg.system {
-  color: var(--accent);
-  font-style: italic;
-}
-.chat-msg.insider {
-  color: var(--muted);
+  background: #c8f5b6;
+  color: #1d6b1d;
+  font-weight: 800;
+  text-align: center;
 }
 
+.chat-msg.close {
+  background: #fff3c2;
+  color: #7a5300;
+}
+
+/* System messages are coloured by what they announce. Default: skribbl
+ * orange. We treat host-promotion as an info note in the same orange. */
+.chat-msg.system {
+  background: #ffffff;
+  color: #ee9631;
+  font-style: italic;
+  font-weight: 800;
+}
+
+.chat-msg.insider {
+  background: #e8eef9;
+  color: #455;
+  font-style: italic;
+}
+
+/* No more Send button — Enter submits. The input fills its row. */
 .chat-form {
-  display: flex;
-  gap: 0.4rem;
+  display: block;
+  width: 100%;
 }
 
 .chat-form input {
-  flex: 1;
-  font-size: 1rem;
-  padding: 0.6rem 0.75rem;
-  border-radius: 10px;
-  border: 2px solid #ffffff22;
-  background: var(--bg-2);
-  color: var(--text);
-  min-height: 44px;
+  width: 100%;
+  font-size: 0.95em;
+  padding: 0.4rem 0.7rem;
+  border-radius: 3px;
+  border: 2px solid var(--panel-border);
+  background: #ffffff;
+  color: #111;
+  min-height: 4vh;
+  font-family: inherit;
 }
 
-.chat-form .secondary {
-  min-width: 0;
-  padding: 0.6rem 1rem;
+.chat-form input:focus {
+  outline: none;
+  border-color: #56b2fd;
 }
 
 .leave-btn {
@@ -1005,6 +1491,129 @@ button.ghost {
   h1 {
     font-size: 2.4rem;
   }
+}
+
+/* --- Join modal (code input + live network room list) ------------------- */
+
+.join-modal {
+  background: var(--panel);
+  border-radius: 16px;
+  padding: 1rem 1.1rem 1.25rem;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  border: 2px solid var(--panel-border);
+  animation: join-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1.2);
+}
+
+@keyframes join-pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+}
+
+.join-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.join-modal-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--accent);
+}
+
+.join-modal .section-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+.room-count-badge {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.75rem;
+  color: var(--text);
+  letter-spacing: 0;
+}
+
+.empty-rooms {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-style: italic;
+  padding: 0.6rem 0;
+}
+
+.room-list-modal {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+/* Each row slides in with a small per-row delay set inline. */
+.room-item-modal {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--bg-2);
+  padding: 0.5rem 0.7rem;
+  border-radius: 10px;
+  animation: room-slide 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes room-slide {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+}
+
+.room-item-modal .room-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.room-item-modal .room-code {
+  letter-spacing: 0.15em;
+}
+
+.room-item-modal .room-host {
+  font-size: 0.78rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-item-modal .room-count {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-right: 0.2rem;
+}
+
+.room-item-modal .secondary {
+  padding: 0.4rem 0.7rem;
+  min-height: 36px;
+  font-size: 0.9rem;
 }
 
 /* --- Intro splash (the hand-drawn "potato tiger") ------------------------ */

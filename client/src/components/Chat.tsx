@@ -1,26 +1,58 @@
 /**
- * Chat.tsx — the message list + input. During a game this is also where you
- * type guesses. Messages are styled by their `kind` (correct/close/system/...).
+ * Chat.tsx — chat building blocks.
+ *
+ * Exposes three pieces so different screens can compose them:
+ *  - <ChatMessages />  the scrolling colored message list (auto-scrolls)
+ *  - <ChatInput />     just the text input form (Enter to send)
+ *  - <Chat />          convenience wrapper that stacks input + messages,
+ *                      with `inputPosition` deciding the order.
+ *
+ * During a game the input doubles as the guess box. Server tags each message
+ * with a `kind` (normal/correct/close/system/insider) which we style.
  */
 
 import { useEffect, useRef, useState } from "react";
 import { CHAT_MAX } from "@shared/types";
 import type { ChatMessage } from "@shared/types";
 
-interface Props {
-  messages: ChatMessage[];
-  onSend: (text: string) => void;
-  placeholder?: string;
+export function ChatMessages({ messages }: { messages: ChatMessage[] }) {
+  const topRef = useRef<HTMLDivElement | null>(null);
+
+  // Newest message at top — auto-scroll to the top so it's always in view.
+  useEffect(() => {
+    topRef.current?.scrollIntoView({ block: "start" });
+  }, [messages]);
+
+  // Reverse a copy so the freshest message renders first. We also stripe
+  // normal user messages with an alternating "odd" class for readability.
+  const reversed = [...messages].reverse();
+  let normalIdx = 0;
+
+  return (
+    <div className="chat-messages">
+      <div ref={topRef} />
+      {reversed.map((m, i) => {
+        const isNormal = m.kind === "normal";
+        const odd = isNormal && normalIdx++ % 2 === 1;
+        return (
+          <div key={i} className={`chat-msg ${m.kind}${odd ? " odd" : ""}`}>
+            {m.name && <b>{m.name}: </b>}
+            {m.text}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
-export function Chat({ messages, onSend, placeholder = "Type your guess…" }: Props) {
+export function ChatInput({
+  onSend,
+  placeholder = "Type your guess…",
+}: {
+  onSend: (text: string) => void;
+  placeholder?: string;
+}) {
   const [text, setText] = useState("");
-  const endRef = useRef<HTMLDivElement | null>(null);
-
-  // Auto-scroll to the newest message.
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end" });
-  }, [messages]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,29 +63,37 @@ export function Chat({ messages, onSend, placeholder = "Type your guess…" }: P
   }
 
   return (
-    <div className="chat">
-      <div className="chat-messages">
-        {messages.map((m, i) => (
-          <div key={i} className={`chat-msg ${m.kind}`}>
-            {m.name && <b>{m.name}: </b>}
-            {m.text}
-          </div>
-        ))}
-        <div ref={endRef} />
-      </div>
-      <form className="chat-form" onSubmit={submit}>
-        <input
-          type="text"
-          value={text}
-          maxLength={CHAT_MAX}
-          placeholder={placeholder}
-          onChange={(e) => setText(e.target.value)}
-          autoComplete="off"
-        />
-        <button type="submit" className="secondary">
-          Send
-        </button>
-      </form>
+    <form className="chat-form" onSubmit={submit}>
+      <input
+        type="text"
+        value={text}
+        maxLength={CHAT_MAX}
+        placeholder={placeholder}
+        onChange={(e) => setText(e.target.value)}
+        autoComplete="off"
+      />
+    </form>
+  );
+}
+
+interface ChatProps {
+  messages: ChatMessage[];
+  onSend: (text: string) => void;
+  placeholder?: string;
+  inputPosition?: "top" | "bottom";
+}
+
+export function Chat({
+  messages,
+  onSend,
+  placeholder = "Type your guess…",
+  inputPosition = "bottom",
+}: ChatProps) {
+  return (
+    <div className={`chat input-${inputPosition}`}>
+      {inputPosition === "top" && <ChatInput onSend={onSend} placeholder={placeholder} />}
+      <ChatMessages messages={messages} />
+      {inputPosition === "bottom" && <ChatInput onSend={onSend} placeholder={placeholder} />}
     </div>
   );
 }

@@ -33,3 +33,5 @@ npm-debug.log*
 skribble.io/
 CLAUDE.md
 .claude/
+
+implementation_plan.md

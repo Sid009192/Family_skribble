@@ -92,7 +92,7 @@ button {
 }
 
 button:disabled {
-  opacity: 0.4;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
@@ -639,11 +639,11 @@ button.ghost {
   transform: rotate(30deg);
 }
 
-/* Glass-morphism settings panel — slate-grey translucent (matches the
- * darker frosted look in the original skribbl screenshot). Flows edge-to-
- * edge; padding inside controls the grid's breathing room. */
+/* Glass panel — high-opacity slate so the *effective* colour matches the
+ * user's target #35394a. We still apply backdrop-blur so the doodles peek
+ * through at the edges, but the panel itself reads as a solid dark slate. */
 .settings-section {
-  background: rgba(60, 72, 96, 0.55);
+  background: rgba(53, 57, 74, 0.92);
   backdrop-filter: blur(10px) saturate(110%);
   -webkit-backdrop-filter: blur(10px) saturate(110%);
   padding: 6px 10px;
@@ -693,6 +693,25 @@ button.ghost {
   height: 2.6vh;
 }
 
+/* View-only state for non-hosts: keep the number clearly readable, just
+ * dimmed so it's obviously not editable. */
+.setting-number:disabled {
+  background: #f3f3f3;
+  color: #444;
+  cursor: not-allowed;
+  opacity: 1; /* override the global button:disabled rule */
+}
+
+.custom-words:disabled {
+  background: #f5f5f5;
+  color: #555;
+  cursor: not-allowed;
+}
+
+.custom-only-toggle input:disabled {
+  cursor: not-allowed;
+}
+
 /* Custom words strip — full-page width, flush to the edges. White textarea
  * sits directly on the lobby (no surrounding white frame). */
 .custom-words-strip {
@@ -705,7 +724,7 @@ button.ghost {
   justify-content: space-between;
   align-items: center;
   padding: 4px 10px;
-  background: rgba(60, 72, 96, 0.55);
+  background: rgba(53, 57, 74, 0.92);
   backdrop-filter: blur(10px) saturate(110%);
   -webkit-backdrop-filter: blur(10px) saturate(110%);
   font-weight: 700;
@@ -734,14 +753,15 @@ button.ghost {
   accent-color: var(--accent);
 }
 
-/* Textarea spans the FULL lobby width (edge-to-edge), white bg, no border. */
+/* Textarea spans the FULL lobby width (edge-to-edge), white bg, no border.
+ * Made ~3× taller per user request — roomy enough to paste a family list. */
 .custom-words {
   width: 100%;
   display: block;
-  min-height: 4.5vh;
+  min-height: 15.5vh;
   resize: vertical;
   font-size: 0.78em;
-  padding: 4px 10px;
+  padding: 6px 10px;
   border-radius: 0;
   border: none;
   background: #ffffff;
@@ -767,9 +787,9 @@ button.ghost {
 
 .start-btn,
 .invite-btn {
-  height: 4.2vh;
-  min-height: 30px;
-  font-size: 1em;
+  height: 2.8vh;
+  min-height: 22px;
+  font-size: 0.78em;
   padding: 0;
   border-radius: 0;
 }
@@ -924,17 +944,26 @@ button.ghost {
   height: 100%;
 }
 
-/* Leader crown sits on the LEFT side of the avatar's head, smaller, with
- * the same -15° tilt the user wanted. Sized to roughly half the avatar. */
+/* Leader crown: small, on the LEFT of the head, tilted, sitting BEHIND
+ * the avatar (z-index:-1) so the head overlaps the crown's base. Nudged
+ * 3px closer to the person per user request. */
 .leader-crown {
   position: absolute;
-  top: -8px;
-  left: -8px;
+  top: -5px;
+  left: -4px;
   width: 18px;
   height: 18px;
   transform: rotate(-20deg);
+  z-index: -1;
   filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.25));
   pointer-events: none;
+}
+
+/* Make sure the avatar inside the cell creates its own stacking context so
+ * the leader-crown sitting at z-index:-1 only goes behind the avatar, not
+ * behind the row's background. */
+.avatar-cell {
+  z-index: 0;
 }
 
 .kick-btn {

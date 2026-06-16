@@ -33,17 +33,10 @@ const ICONS = {
 } as const;
 
 export function SettingsGrid({ settings, editable, onChange }: Props) {
-  if (!editable) {
-    return (
-      <div className="settings-panel readonly">
-        <span>{settings.maxPlayers} max players</span>
-        <span>{settings.rounds} rounds</span>
-        <span>{settings.drawTime}s draw time</span>
-        <span>{settings.wordChoiceCount} word choices</span>
-        <span>{settings.hintCount} hints</span>
-      </div>
-    );
-  }
+  // Same 2-col grid for both roles. Non-host inputs are just `disabled` so
+  // they see exactly what the host sees, can't change anything (the server
+  // also enforces this — see `updateSettings` permission check).
+  const noop = () => {};
   return (
     <div className="settings-grid">
       <SettingRow
@@ -51,14 +44,16 @@ export function SettingsGrid({ settings, editable, onChange }: Props) {
         label="Players"
         value={settings.maxPlayers}
         limit={SETTINGS_LIMITS.maxPlayers}
-        onChange={(v) => onChange({ maxPlayers: v })}
+        disabled={!editable}
+        onChange={editable ? (v) => onChange({ maxPlayers: v }) : noop}
       />
       <SettingRow
         icon={ICONS.rounds}
         label="Rounds"
         value={settings.rounds}
         limit={SETTINGS_LIMITS.rounds}
-        onChange={(v) => onChange({ rounds: v })}
+        disabled={!editable}
+        onChange={editable ? (v) => onChange({ rounds: v }) : noop}
       />
       <SettingRow
         icon={ICONS.drawtime}
@@ -66,28 +61,32 @@ export function SettingsGrid({ settings, editable, onChange }: Props) {
         value={settings.drawTime}
         limit={SETTINGS_LIMITS.drawTime}
         step={5}
-        onChange={(v) => onChange({ drawTime: v })}
+        disabled={!editable}
+        onChange={editable ? (v) => onChange({ drawTime: v }) : noop}
       />
       <SettingRow
         icon={ICONS.wordcount}
         label="Word Count"
         value={settings.wordChoiceCount}
         limit={SETTINGS_LIMITS.wordChoiceCount}
-        onChange={(v) => onChange({ wordChoiceCount: v })}
+        disabled={!editable}
+        onChange={editable ? (v) => onChange({ wordChoiceCount: v }) : noop}
       />
       <SettingRow
         icon={ICONS.hints}
         label="Hints"
         value={settings.hintCount}
         limit={SETTINGS_LIMITS.hintCount}
-        onChange={(v) => onChange({ hintCount: v })}
+        disabled={!editable}
+        onChange={editable ? (v) => onChange({ hintCount: v }) : noop}
       />
     </div>
   );
 }
 
 export function CustomWordsSection({ settings, editable, onChange }: Props) {
-  if (!editable) return null;
+  // Shown to host AND non-host (per user — same layout). For non-host, the
+  // checkbox + textarea are disabled so it's view-only.
   return (
     <div className="custom-words-section">
       <div className="custom-words-head">
@@ -96,17 +95,23 @@ export function CustomWordsSection({ settings, editable, onChange }: Props) {
           <input
             type="checkbox"
             checked={settings.customWordsOnly}
-            onChange={(e) => onChange({ customWordsOnly: e.target.checked })}
+            disabled={!editable}
+            onChange={(e) =>
+              editable && onChange({ customWordsOnly: e.target.checked })
+            }
           />
           Use custom words only
         </label>
       </div>
       <textarea
         className="custom-words"
-        // Uncontrolled so typing isn't interrupted; we save on blur.
+        // `key` forces React to remount the textarea when the list changes
+        // server-side, picking up the new defaultValue.
+        key={settings.customWords.join(",")}
         defaultValue={settings.customWords.join(", ")}
         placeholder="Minimum of 10 words. 1-32 characters per word! Separated by a , (comma)"
-        onBlur={(e) => onChange({ customWords: e.target.value })}
+        disabled={!editable}
+        onBlur={(e) => editable && onChange({ customWords: e.target.value })}
       />
     </div>
   );
@@ -128,6 +133,7 @@ function SettingRow({
   value,
   limit,
   step = 1,
+  disabled = false,
   onChange,
 }: {
   icon: string;
@@ -135,6 +141,7 @@ function SettingRow({
   value: number;
   limit: { min: number; max: number };
   step?: number;
+  disabled?: boolean;
   onChange: (v: number) => void;
 }) {
   return (
@@ -148,6 +155,7 @@ function SettingRow({
         min={limit.min}
         max={limit.max}
         step={step}
+        disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
       />
     </div>

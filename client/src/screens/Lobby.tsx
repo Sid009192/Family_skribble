@@ -74,26 +74,26 @@ export function Lobby({ api, meId, onOpenAdmin }: Props) {
           />
         </div>
 
-        {isHost && (
-          <div className="lobby-actions">
-            <button
-              className="primary start-btn"
-              onClick={api.startGame}
-              disabled={!canStart}
-            >
-              {canStart ? "Start!" : "Need 2+ players"}
-            </button>
-            <button
-              type="button"
-              className="secondary invite-btn"
-              onClick={copyCode}
-              title="Copy room code"
-            >
-              <img src="/img/link.svg" alt="" className="invite-link-icon" />
-              {copied ? "Copied!" : "Invite"}
-            </button>
-          </div>
-        )}
+        {/* Identical layout for host and non-host. Non-host gets disabled
+            buttons so the page structure doesn't shift between roles. */}
+        <div className="lobby-actions">
+          <button
+            className="primary start-btn"
+            onClick={isHost ? api.startGame : undefined}
+            disabled={!isHost || !canStart}
+          >
+            {isHost ? (canStart ? "Start!" : "Need 2+ players") : "Waiting for host…"}
+          </button>
+          <button
+            type="button"
+            className="secondary invite-btn"
+            onClick={copyCode}
+            title="Copy room code"
+          >
+            <img src="/img/link.svg" alt="" className="invite-link-icon" />
+            {copied ? "Copied!" : "Invite"}
+          </button>
+        </div>
 
         <div className="lobby-chat-input-wrap">
           <ChatInput onSend={api.sendChat} placeholder="Chat with the room…" />
@@ -114,10 +114,6 @@ export function Lobby({ api, meId, onOpenAdmin }: Props) {
           <ChatMessages messages={api.messages} />
         </div>
       </section>
-
-      {!isHost && (
-        <p className="hint waiting-hint">Waiting for the host to start…</p>
-      )}
 
       <button className="ghost leave-btn" onClick={api.leaveRoom}>
         Leave room

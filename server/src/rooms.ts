@@ -119,7 +119,10 @@ export function addPlayer(
   if (!room) return { ok: false, error: "Room not found." };
   // Already in this room (e.g. duplicate event)? Just return current state.
   if (room.players.some((p) => p.id === id)) return { ok: true, room };
-  if (room.players.length >= MAX_PLAYERS) {
+  // Cap is the room's own setting, clamped server-side to MAX_PLAYERS so a
+  // tampered client can never grow the room past the hard ceiling.
+  const cap = Math.min(room.settings.maxPlayers, MAX_PLAYERS);
+  if (room.players.length >= cap) {
     return { ok: false, error: "This room is full." };
   }
   room.players.push(makePlayer(id, name, avatar, false));
@@ -132,7 +135,13 @@ export function addPlayer(
  * - If the host left, the next player is promoted to host.
  * - Otherwise returns the updated room.
  */
-export function removePlayer(code: string, id: string): Room | undefined {
+export interface RemoveResult {
+  room: Room;
+  /** Name of the newly promoted host, if the leaver was the previous host. */
+  promotedHostName?: string;
+}
+
+export function removePlayer(code: string, id: string): RemoveResult | undefined {
   const room = rooms.get(code);
   if (!room) return undefined;
 
@@ -143,12 +152,16 @@ export function removePlayer(code: string, id: string): Room | undefined {
     return undefined;
   }
 
-  // If the host left, promote the first remaining player.
+  // If the host left, promote the first remaining player. We expose the new
+  // host's name so the caller can broadcast a "X is now the room owner!"
+  // system chat message without re-reading the room state.
+  let promotedHostName: string | undefined;
   if (room.hostId === id) {
     const newHost = room.players[0];
     newHost.isHost = true;
     room.hostId = newHost.id;
+    promotedHostName = newHost.name;
   }
 
-  return room;
+  return { room, promotedHostName };
 }

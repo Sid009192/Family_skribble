@@ -52,18 +52,15 @@ function Layer({ atlas, index }: { atlas: string; index: number }) {
 
 export function Avatar({
   avatar,
-  size = 96,
+  size,
 }: {
   avatar: AvatarType;
+  /** Fixed pixel size. Omit to let CSS size the avatar (e.g. `vh`-based). */
   size?: number;
 }) {
+  const style = size != null ? { width: size, height: size } : undefined;
   return (
-    <span
-      className="avatar"
-      role="img"
-      aria-label="player avatar"
-      style={{ width: size, height: size }}
-    >
+    <span className="avatar" role="img" aria-label="player avatar" style={style}>
       <Layer atlas="color_atlas" index={avatar.color % AVATAR_OPTIONS.colors} />
       <Layer atlas="eyes_atlas" index={avatar.eyes % AVATAR_OPTIONS.eyes} />
       <Layer atlas="mouth_atlas" index={avatar.mouth % AVATAR_OPTIONS.mouths} />

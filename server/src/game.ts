@@ -62,7 +62,16 @@ export function startGame(code: string): void {
   const room = getRoom(code);
   if (!room) return;
   if (room.phase !== "lobby" && room.phase !== "gameover") return;
-  if (room.players.length < 2) return;
+  if (room.players.length < 2) {
+    // Surface the reason as a system chat message so the host gets feedback,
+    // instead of the Start button looking like it does nothing.
+    io.to(code).emit("chat", {
+      kind: "system",
+      name: "",
+      text: "You need at least 2 players to start the game!",
+    });
+    return;
+  }
 
   for (const p of room.players) {
     p.score = 0;

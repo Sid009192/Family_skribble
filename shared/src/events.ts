@@ -37,6 +37,7 @@ export interface JoinResult {
  * comma-separated text from the textarea (the server parses + validates it).
  */
 export interface SettingsUpdate {
+  maxPlayers?: number;
   rounds?: number;
   drawTime?: number;
   wordChoiceCount?: number;

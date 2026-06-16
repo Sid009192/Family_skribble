@@ -6,17 +6,24 @@
  */
 
 :root {
-  --bg: #1f2a44;
-  --bg-2: #26335280;
-  --panel: #2b3a5e;
-  --accent: #ffd23f;
-  --accent-ink: #1f2a44;
-  --text: #f5f7fb;
-  --muted: #aab4cf;
-  --online: #36d399;
+  /* skribbl-style royal-blue theme (re-theme later by editing these). */
+  --bg: #124da5;
+  --bg-2: #0e3f8a99;
+  --panel: #1b58b0;
+  --panel-border: #040a33;
+  --accent: #ffc532; /* skribbl yellow — highlights, timer, outlines */
+  --accent-ink: #15306a;
+  --text: #ffffff;
+  --muted: #b9c7e8;
+  --online: #53e237;
   --offline: #f87272;
   --danger: #f87272;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Action button colors (skribbl's green "play" + blue "create"). */
+  --green: #53e237;
+  --green-d: #38c41c;
+  --blue: #2c8de7;
+  --blue-d: #1671c5;
+  font-family: Nunito, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 * {
@@ -31,7 +38,13 @@ body,
 }
 
 body {
-  background: var(--bg);
+  background-color: var(--bg);
+  /* A faint doodle overlay gives the skribbl playful feel without their assets. */
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.06) 1.5px,
+    transparent 1.5px
+  );
+  background-size: 26px 26px;
   color: var(--text);
   -webkit-tap-highlight-color: transparent;
 }
@@ -43,11 +56,51 @@ h1 {
   font-size: 1.9rem;
 }
 
+/* --- Brand (landing title) ----------------------------------------------- */
+
+.brand {
+  text-align: center;
+  user-select: none; /* it's the long-press target for the admin console */
+  cursor: pointer;
+}
+
+.brand-title {
+  margin: 0;
+  font-weight: 900;
+  font-size: 2.4rem;
+  line-height: 1.05;
+  letter-spacing: 0.5px;
+  /* Rainbow lettering, clipped to the text, like skribbl's logo. */
+  background: linear-gradient(
+    90deg,
+    #ff5a5f,
+    #ffb400,
+    #ffe14d,
+    #53e237,
+    #2c8de7,
+    #a06cff,
+    #ff7ac0
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--panel-border);
+  filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.35));
+}
+
+.brand-tag {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
 /* --- shared building blocks ---------------------------------------------- */
 
 button {
   font-size: 1.05rem;
-  font-weight: 700;
+  font-weight: 800;
   padding: 0.85rem 1.25rem;
   border: none;
   border-radius: 12px;
@@ -55,6 +108,7 @@ button {
   min-height: 48px; /* finger-friendly */
   color: var(--accent-ink);
   background: var(--accent);
+  font-family: inherit;
 }
 
 button:disabled {
@@ -62,14 +116,32 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* Green "play"-style primary + blue "create"-style secondary, with skribbl's
+ * subtle text shadow and a 2px "press down" on :active. */
 button.primary {
   width: 100%;
-  background: var(--accent);
+  background: var(--green);
+  color: #ffffff;
+  text-shadow: 1px 1px 0 #00000033;
+}
+
+button.primary:hover:not(:disabled) {
+  background: var(--green-d);
 }
 
 button.secondary {
-  background: #5a9bff;
-  color: white;
+  background: var(--blue);
+  color: #ffffff;
+  text-shadow: 1px 1px 0 #00000033;
+}
+
+button.secondary:hover:not(:disabled) {
+  background: var(--blue-d);
+}
+
+button.primary:active:not(:disabled),
+button.secondary:active:not(:disabled) {
+  transform: translateY(2px);
 }
 
 button.ghost {
@@ -219,48 +291,71 @@ button.ghost {
   accent-color: var(--accent);
 }
 
-/* --- Avatar picker ------------------------------------------------------- */
+/* --- Avatar (layered sprite atlases) ------------------------------------- */
 
-.avatar-picker {
+.avatar {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+/* Each layer fills the avatar box; background-position (set inline) crops the
+ * 10×10 atlas to the chosen cell. background-size:1000% = 10 cells wide. */
+.avatar-layer {
+  position: absolute;
+  inset: 0;
+  background-size: 1000% 1000%;
+  background-repeat: no-repeat;
+  image-rendering: auto;
+}
+
+/* --- Avatar customizer (skribbl-style arrows + die) ---------------------- */
+
+.avatar-customizer {
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 0.75rem;
   background: var(--bg-2);
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   border-radius: 16px;
+  border: 2px solid var(--panel-border);
 }
 
-.avatar-rows {
+.avatar-customizer .arrows {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  width: 100%;
-  max-width: 240px;
-}
-
-.part-row {
-  display: grid;
-  grid-template-columns: 48px 1fr 48px;
-  align-items: center;
   gap: 0.5rem;
 }
 
-.part-label {
-  text-align: center;
-  color: var(--muted);
-  font-weight: 600;
-}
-
-.arrow {
+.avatar-customizer .arrow {
   background: var(--panel);
   color: var(--text);
-  padding: 0.4rem;
-  min-height: 44px;
+  min-width: 42px;
+  min-height: 42px;
+  padding: 0;
+  border-radius: 10px;
+  font-size: 1.4rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
 }
 
-.randomize {
-  margin-top: 0.25rem;
+.avatar-customizer .arrow:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+.randomize-die {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  font-size: 1.2rem;
+  background: transparent;
+  border-radius: 10px;
 }
 
 /* --- Lobby --------------------------------------------------------------- */
@@ -910,4 +1005,158 @@ button.ghost {
   h1 {
     font-size: 2.4rem;
   }
+}
+
+/* --- Intro splash (the hand-drawn "potato tiger") ------------------------ */
+
+.intro {
+  --intro-accent: #ff8c00;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #0f0f0f;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: "Courier New", Courier, monospace;
+  /* Fade + zoom out when leaving, mirroring the source animation. */
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.intro.leaving {
+  opacity: 0;
+  transform: scale(1.05);
+  pointer-events: none;
+}
+
+.intro-grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.intro-stage {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 700px;
+  padding: 0 1rem;
+  animation: intro-float 6s ease-in-out infinite;
+}
+
+@keyframes intro-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-0.5deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(0.5deg);
+  }
+}
+
+.intro-svg {
+  position: relative;
+}
+
+.intro-svg svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.intro .line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.intro .outline {
+  stroke: #fff;
+  stroke-width: 4;
+}
+
+.intro .detail {
+  stroke: #fff;
+  stroke-width: 2.5;
+}
+
+.intro .fill {
+  stroke: var(--intro-accent);
+  stroke-width: 35;
+  opacity: 0.6;
+}
+
+.intro .stripe {
+  stroke: #222;
+  stroke-width: 6;
+}
+
+.intro-title {
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-family: "Caveat", cursive;
+  font-size: 3.5rem;
+  color: #fff;
+  text-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.intro-panel {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  max-width: 80vw;
+  text-align: center;
+  z-index: 3;
+}
+
+.intro-status {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 15px;
+  letter-spacing: 1px;
+  transition: color 0.3s;
+}
+
+.intro-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.intro-fill {
+  width: 0%;
+  height: 100%;
+  background: var(--intro-accent);
+  box-shadow: 0 0 10px var(--intro-accent);
+  transition: width 0.1s linear;
+}
+
+.intro-skip {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 3;
+  background: none;
+  color: rgba(255, 255, 255, 0.35);
+  min-height: 0;
+  padding: 0.5rem;
+  font-family: inherit;
+  font-weight: 700;
+}
+
+.intro-skip:hover {
+  color: #fff;
 }

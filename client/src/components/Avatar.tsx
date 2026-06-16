@@ -1,29 +1,33 @@
 /**
- * Avatar.tsx — our own avatar, drawn as an SVG face (no image assets needed).
+ * Avatar.tsx — a player's face, built from three sprite atlases.
  *
- * An avatar is just three numbers: { color, eyes, mouth }. Each number picks a
- * variant below. Because it's pure SVG, it scales crisply to any size and is
- * fully "ours" — a small quirk that sets us apart from skribbl.
+ * An avatar is just three numbers: { color, eyes, mouth }. Each number indexes
+ * a cell in one of the 10×10 atlas images in `public/avatar/`. We stack three
+ * transparent layers (color on the bottom, then eyes, then mouth) and slide
+ * each atlas to the right cell with CSS `background-position` — the browser
+ * does the cropping, so there are no image assets to slice.
+ *
+ * Why `background-size: 1000%`? The atlas is 10 cells wide, so blowing it up to
+ * 1000% makes each cell exactly the size of the box. Then a position of
+ * `col/9 * 100%` lines that column up against the left edge (0% = first cell,
+ * 100% = last cell), and likewise for rows.
  */
 
-import { AVATAR_OPTIONS } from "@shared/types";
+import { AVATAR_OPTIONS, AVATAR_ATLAS_COLS } from "@shared/types";
 import type { Avatar as AvatarType } from "@shared/types";
 
-/** The 8 face colors (index = avatar.color). */
-export const AVATAR_COLORS = [
-  "#ff5a5f",
-  "#ffb400",
-  "#ffe14d",
-  "#5ad15a",
-  "#3ec8c8",
-  "#5a9bff",
-  "#a06cff",
-  "#ff7ac0",
-];
+const COLS = AVATAR_ATLAS_COLS; // 10
 
-const INK = "#1f2a44"; // dark outline/feature color
+/** Map a flat cell index to a CSS background-position for a 10×10 atlas. */
+function cellPosition(index: number): string {
+  const col = index % COLS;
+  const row = Math.floor(index / COLS);
+  const x = (col / (COLS - 1)) * 100;
+  const y = (row / (COLS - 1)) * 100;
+  return `${x}% ${y}%`;
+}
 
-/** Pick a random valid avatar (used by the "Randomize" button). */
+/** Pick a random valid avatar (used by the "Randomize" die). */
 export function randomAvatar(): AvatarType {
   const r = (n: number) => Math.floor(Math.random() * n);
   return {
@@ -33,79 +37,17 @@ export function randomAvatar(): AvatarType {
   };
 }
 
-function Eyes({ variant }: { variant: number }) {
-  switch (variant % AVATAR_OPTIONS.eyes) {
-    case 0: // dots
-      return (
-        <g fill={INK}>
-          <circle cx="36" cy="44" r="5" />
-          <circle cx="64" cy="44" r="5" />
-        </g>
-      );
-    case 1: // wide ovals
-      return (
-        <g fill={INK}>
-          <ellipse cx="36" cy="44" rx="6" ry="4" />
-          <ellipse cx="64" cy="44" rx="6" ry="4" />
-        </g>
-      );
-    case 2: // happy arches ^ ^
-      return (
-        <g fill="none" stroke={INK} strokeWidth="3" strokeLinecap="round">
-          <path d="M30 46 L36 40 L42 46" />
-          <path d="M58 46 L64 40 L70 46" />
-        </g>
-      );
-    case 3: // surprised
-      return (
-        <g>
-          <circle cx="36" cy="44" r="8" fill="#fff" stroke={INK} strokeWidth="2" />
-          <circle cx="36" cy="44" r="3" fill={INK} />
-          <circle cx="64" cy="44" r="8" fill="#fff" stroke={INK} strokeWidth="2" />
-          <circle cx="64" cy="44" r="3" fill={INK} />
-        </g>
-      );
-    default: // sleepy lines
-      return (
-        <g stroke={INK} strokeWidth="3" strokeLinecap="round">
-          <line x1="30" y1="44" x2="42" y2="44" />
-          <line x1="58" y1="44" x2="70" y2="44" />
-        </g>
-      );
-  }
-}
-
-function Mouth({ variant }: { variant: number }) {
-  switch (variant % AVATAR_OPTIONS.mouths) {
-    case 0: // smile
-      return (
-        <path
-          d="M36 64 Q50 76 64 64"
-          fill="none"
-          stroke={INK}
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-      );
-    case 1: // open oval
-      return <ellipse cx="50" cy="68" rx="10" ry="7" fill={INK} />;
-    case 2: // flat
-      return (
-        <line
-          x1="40"
-          y1="68"
-          x2="60"
-          y2="68"
-          stroke={INK}
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-      );
-    case 3: // big grin
-      return <path d="M34 62 Q50 80 66 62 Z" fill={INK} />;
-    default: // small o
-      return <circle cx="50" cy="68" r="5" fill={INK} />;
-  }
+/** One stacked atlas layer (color / eyes / mouth). */
+function Layer({ atlas, index }: { atlas: string; index: number }) {
+  return (
+    <span
+      className="avatar-layer"
+      style={{
+        backgroundImage: `url(/avatar/${atlas}.gif)`,
+        backgroundPosition: cellPosition(index),
+      }}
+    />
+  );
 }
 
 export function Avatar({
@@ -115,18 +57,16 @@ export function Avatar({
   avatar: AvatarType;
   size?: number;
 }) {
-  const color = AVATAR_COLORS[avatar.color % AVATAR_COLORS.length];
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 100 100"
+    <span
+      className="avatar"
       role="img"
       aria-label="player avatar"
+      style={{ width: size, height: size }}
     >
-      <circle cx="50" cy="50" r="46" fill={color} stroke={INK} strokeWidth="3" />
-      <Eyes variant={avatar.eyes} />
-      <Mouth variant={avatar.mouth} />
-    </svg>
+      <Layer atlas="color_atlas" index={avatar.color % AVATAR_OPTIONS.colors} />
+      <Layer atlas="eyes_atlas" index={avatar.eyes % AVATAR_OPTIONS.eyes} />
+      <Layer atlas="mouth_atlas" index={avatar.mouth % AVATAR_OPTIONS.mouths} />
+    </span>
   );
 }

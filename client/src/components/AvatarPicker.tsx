@@ -1,9 +1,12 @@
 /**
- * AvatarPicker.tsx — lets a player customize their avatar before joining.
+ * AvatarPicker.tsx — customize your avatar before joining (skribbl-style).
  *
- * It's a "controlled component": it doesn't own the avatar value itself. The
- * parent holds the value and passes it in, plus an `onChange` to update it.
- * That keeps a single source of truth in the parent (a key React habit).
+ * The avatar sits in the middle with a column of "‹" arrows on the left and "›"
+ * arrows on the right. Each of the three rows controls one feature, in the
+ * order eyes → mouth → colour. A die in the corner randomizes everything.
+ *
+ * It's a "controlled component": the parent owns the avatar value and passes it
+ * in with an `onChange`, so there's a single source of truth (a key React habit).
  */
 
 import { AVATAR_OPTIONS } from "@shared/types";
@@ -15,63 +18,60 @@ interface Props {
   onChange: (next: AvatarType) => void;
 }
 
+// The three features, top-to-bottom, with their option counts.
+const PARTS = [
+  { key: "eyes", label: "eyes", count: AVATAR_OPTIONS.eyes },
+  { key: "mouth", label: "mouth", count: AVATAR_OPTIONS.mouths },
+  { key: "color", label: "colour", count: AVATAR_OPTIONS.colors },
+] as const;
+
 export function AvatarPicker({ value, onChange }: Props) {
-  // Cycle one part (color/eyes/mouth) forward or backward, wrapping around.
+  // Cycle one part forward/backward, wrapping around (no out-of-range cells).
   function cycle(part: keyof AvatarType, delta: number, count: number) {
     const next = (((value[part] + delta) % count) + count) % count;
     onChange({ ...value, [part]: next });
   }
 
   return (
-    <div className="avatar-picker">
+    <div className="avatar-customizer">
+      <div className="arrows left">
+        {PARTS.map((p) => (
+          <button
+            key={p.key}
+            type="button"
+            className="arrow"
+            onClick={() => cycle(p.key, -1, p.count)}
+            aria-label={`previous ${p.label}`}
+          >
+            ‹
+          </button>
+        ))}
+      </div>
+
       <Avatar avatar={value} size={120} />
 
-      <div className="avatar-rows">
-        <PartRow
-          label="Color"
-          onPrev={() => cycle("color", -1, AVATAR_OPTIONS.colors)}
-          onNext={() => cycle("color", 1, AVATAR_OPTIONS.colors)}
-        />
-        <PartRow
-          label="Eyes"
-          onPrev={() => cycle("eyes", -1, AVATAR_OPTIONS.eyes)}
-          onNext={() => cycle("eyes", 1, AVATAR_OPTIONS.eyes)}
-        />
-        <PartRow
-          label="Mouth"
-          onPrev={() => cycle("mouth", -1, AVATAR_OPTIONS.mouths)}
-          onNext={() => cycle("mouth", 1, AVATAR_OPTIONS.mouths)}
-        />
+      <div className="arrows right">
+        {PARTS.map((p) => (
+          <button
+            key={p.key}
+            type="button"
+            className="arrow"
+            onClick={() => cycle(p.key, 1, p.count)}
+            aria-label={`next ${p.label}`}
+          >
+            ›
+          </button>
+        ))}
       </div>
 
       <button
         type="button"
-        className="ghost randomize"
+        className="randomize-die"
         onClick={() => onChange(randomAvatar())}
+        aria-label="randomize avatar"
+        title="Randomize"
       >
-        🎲 Randomize
-      </button>
-    </div>
-  );
-}
-
-function PartRow({
-  label,
-  onPrev,
-  onNext,
-}: {
-  label: string;
-  onPrev: () => void;
-  onNext: () => void;
-}) {
-  return (
-    <div className="part-row">
-      <button type="button" className="arrow" onClick={onPrev} aria-label={`previous ${label}`}>
-        ◀
-      </button>
-      <span className="part-label">{label}</span>
-      <button type="button" className="arrow" onClick={onNext} aria-label={`next ${label}`}>
-        ▶
+        🎲
       </button>
     </div>
   );

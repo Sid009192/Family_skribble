@@ -36,7 +36,7 @@ export function Lobby({ api, meId, onOpenAdmin }: Props) {
     <main className="lobby">
       <header className="lobby-header">
         <span className="wordmark" {...longPress}>
-          Family Scribble
+          Agarwal Family Skribbl
         </span>
         <span className="lobby-label">Room code</span>
         <button className="code-chip" onClick={copyCode} title="Tap to copy">

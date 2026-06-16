@@ -36,7 +36,7 @@ export function Game({ api, meId, onOpenAdmin }: Props) {
     <main className="game">
       <header className="game-header">
         <span className="wordmark" {...longPress}>
-          Scribble
+          Skribbl
         </span>
         <span className="round">
           Round {room.round}/{room.settings.rounds}

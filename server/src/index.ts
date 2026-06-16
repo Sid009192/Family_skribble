@@ -376,7 +376,7 @@ io.on("connection", (socket) => {
 });
 
 httpServer.listen(PORT, "0.0.0.0", () => {
-  console.log(`\n  Family Scribble server running:`);
+  console.log(`\n  Agarwal Family Skribbl server running:`);
   console.log(`    Local:   http://localhost:${PORT}/health`);
   console.log(`    Network: http://<your-PC-IP>:${PORT}/health  (for phones)\n`);
 });

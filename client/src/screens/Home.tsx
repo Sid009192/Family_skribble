@@ -64,7 +64,10 @@ export function Home({
 
   return (
     <main className="home">
-      <h1 {...longPress}>Family Scribble</h1>
+      <header className="brand" {...longPress}>
+        <h1 className="brand-title">Agarwal Family Skribbl</h1>
+        <p className="brand-tag">draw • guess • argue • repeat</p>
+      </header>
 
       <AvatarPicker value={avatar} onChange={setAvatar} />
 

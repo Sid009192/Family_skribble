@@ -13,12 +13,22 @@
  * can never drift apart.
  * ------------------------------------------------------------------ */
 
-/** How many variations exist for each avatar part. */
+/**
+ * How many variations exist for each avatar part.
+ *
+ * These are indices into the sprite atlases in `client/public/avatar/`. Each
+ * atlas is a 10×10 grid of 48px cells (so cell `i` lives at column `i % 10`,
+ * row `⌊i / 10⌋`). The counts below are the number of *filled* cells, so the
+ * server can clamp avatars to valid cells and the picker can wrap correctly.
+ */
 export const AVATAR_OPTIONS = {
-  colors: 8,
-  eyes: 5,
-  mouths: 5,
+  colors: 28,
+  eyes: 57,
+  mouths: 50,
 } as const;
+
+/** Atlas grid is 10 cells per row/column (used to map an index → cell). */
+export const AVATAR_ATLAS_COLS = 10;
 
 export const NAME_MIN = 2;
 export const NAME_MAX = 20;

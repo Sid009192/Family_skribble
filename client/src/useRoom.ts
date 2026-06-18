@@ -10,6 +10,7 @@ import { socket } from "./socket";
 import type { Avatar, ChatMessage, Room, RoomSummary } from "@shared/types";
 import type { JoinResult, SettingsUpdate } from "@shared/events";
 import { play as playSound } from "./sounds";
+import { saveToken } from "./prefs";
 
 const MAX_MESSAGES = 200;
 
@@ -28,6 +29,23 @@ export function useRoom() {
 
   // Super-Admin status (this device proved the key this session).
   const [isAdmin, setIsAdmin] = useState(false);
+
+  // Ref tracking "oldId → newId" pairs for reconnects that are mid-flight.
+  // Prevents the roomState diff from firing spurious leave+join sounds when a
+  // player's socket id changes on reconnect.
+  const reconnectPairs = useRef<Map<string, string>>(new Map());
+
+  // Drawer-disconnect state: set when we receive drawerDisconnecting, cleared
+  // when the room unpauses (drawer came back or turn was skipped).
+  const [drawerDisconnected, setDrawerDisconnected] = useState<{
+    name: string;
+    since: number;
+    seconds: number;
+  } | null>(null);
+  const prevPaused = useRef<boolean>(false);
+
+  // Set when the server tells us our previous room ended while we were away.
+  const [gameEndedWhileAway, setGameEndedWhileAway] = useState(false);
 
   // Refs for diffing previous state — used by the sound triggers so we can
   // fire on transitions (e.g. phase changed, player joined) rather than on
@@ -50,13 +68,31 @@ export function useRoom() {
       const nextIds = new Set(next.players.map((p) => p.id));
       if (prevPlayerIds.current) {
         for (const id of nextIds) {
-          if (!prevPlayerIds.current.has(id)) playSound("join");
+          if (!prevPlayerIds.current.has(id)) {
+            // New id — but don't play join if it's just a reconnect socket swap.
+            const isReconnect = [...reconnectPairs.current.values()].includes(id);
+            if (!isReconnect) playSound("join");
+          }
         }
         for (const id of prevPlayerIds.current) {
-          if (!nextIds.has(id)) playSound("leave");
+          if (!nextIds.has(id)) {
+            // Gone id — don't play leave if the player reconnected under a new id.
+            if (reconnectPairs.current.has(id)) {
+              reconnectPairs.current.delete(id);
+            } else {
+              playSound("leave");
+            }
+          }
         }
       }
       prevPlayerIds.current = nextIds;
+
+      // Clear the drawer-disconnect overlay when the game resumes (either the
+      // drawer came back and the timer was cancelled, or the turn was skipped).
+      if (prevPaused.current && !next.paused) {
+        setDrawerDisconnected(null);
+      }
+      prevPaused.current = next.paused;
 
       // --- Sound: roundStart on transition into the drawing phase.
       if (next.phase === "drawing" && prevPhase.current !== "drawing") {
@@ -115,6 +151,30 @@ export function useRoom() {
       setMessages((prev) => [...prev, msg].slice(-MAX_MESSAGES));
     };
 
+    const onSessionToken = (token: string) => {
+      saveToken(token);
+      // Keep the socket's auth up-to-date so auto-reconnects include the token.
+      socket.auth = { token };
+    };
+
+    const onPlayerDisconnected = (_payload: { name: string }) => {
+      playSound("leave");
+    };
+
+    const onPlayerReconnected = (payload: { oldId: string; newId: string; name: string }) => {
+      // Record the id swap so the roomState diff doesn't fire spurious sounds.
+      reconnectPairs.current.set(payload.oldId, payload.newId);
+      playSound("join");
+    };
+
+    const onDrawerDisconnecting = (payload: { name: string; seconds: number }) => {
+      setDrawerDisconnected({ name: payload.name, seconds: payload.seconds, since: Date.now() });
+    };
+
+    const onGameEndedWhileAway = () => {
+      setGameEndedWhileAway(true);
+    };
+
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on("roomState", onRoomState);
@@ -125,6 +185,11 @@ export function useRoom() {
     socket.on("gameTick", onGameTick);
     socket.on("turnReveal", onTurnReveal);
     socket.on("chat", onChat);
+    socket.on("sessionToken", onSessionToken);
+    socket.on("playerDisconnected", onPlayerDisconnected);
+    socket.on("playerReconnected", onPlayerReconnected);
+    socket.on("drawerDisconnecting", onDrawerDisconnecting);
+    socket.on("gameEndedWhileAway", onGameEndedWhileAway);
 
     return () => {
       socket.off("connect", onConnect);
@@ -137,6 +202,11 @@ export function useRoom() {
       socket.off("gameTick", onGameTick);
       socket.off("turnReveal", onTurnReveal);
       socket.off("chat", onChat);
+      socket.off("sessionToken", onSessionToken);
+      socket.off("playerDisconnected", onPlayerDisconnected);
+      socket.off("playerReconnected", onPlayerReconnected);
+      socket.off("drawerDisconnecting", onDrawerDisconnecting);
+      socket.off("gameEndedWhileAway", onGameEndedWhileAway);
     };
   }, []);
 
@@ -224,6 +294,9 @@ export function useRoom() {
     reveal,
     messages,
     isAdmin,
+    drawerDisconnected,
+    gameEndedWhileAway,
+    dismissGameEndedWhileAway: () => setGameEndedWhileAway(false),
     createRoom,
     joinRoom,
     leaveRoom,

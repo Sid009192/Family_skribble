@@ -11,6 +11,7 @@ import { AVATAR_OPTIONS } from "@shared/types";
 import type { Avatar } from "@shared/types";
 
 const KEY = "familyScribble.prefs.v1";
+const TOKEN_KEY = "familyScribble.sessionToken";
 
 export interface Prefs {
   name: string;
@@ -52,4 +53,24 @@ export function savePrefs(prefs: Prefs): void {
   } catch {
     // ignore (storage full or disabled)
   }
+}
+
+export function loadToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function saveToken(token: string): void {
+  try {
+    localStorage.setItem(TOKEN_KEY, token);
+  } catch {}
+}
+
+export function clearToken(): void {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {}
 }

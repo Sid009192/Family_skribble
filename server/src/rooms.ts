@@ -142,6 +142,38 @@ export interface RemoveResult {
   promotedHostName?: string;
 }
 
+/**
+ * Mark a player as disconnected without removing them from the room.
+ * Their slot is held so they can rejoin with the same name/score.
+ */
+export function markDisconnected(code: string, id: string): void {
+  const room = rooms.get(code);
+  if (!room) return;
+  const p = room.players.find((pl) => pl.id === id);
+  if (p) p.connected = false;
+}
+
+/**
+ * Restore a reconnecting player: swap their old socket id for the new one,
+ * mark them connected again, and fix up hostId/drawerId if needed.
+ * Returns the updated room, or undefined if not found.
+ */
+export function reconnectPlayer(
+  code: string,
+  oldId: string,
+  newId: string,
+): Room | undefined {
+  const room = rooms.get(code);
+  if (!room) return undefined;
+  const p = room.players.find((pl) => pl.id === oldId);
+  if (!p) return undefined;
+  p.id = newId;
+  p.connected = true;
+  if (room.hostId === oldId) room.hostId = newId;
+  if (room.drawerId === oldId) room.drawerId = newId;
+  return room;
+}
+
 export function removePlayer(code: string, id: string): RemoveResult | undefined {
   const room = rooms.get(code);
   if (!room) return undefined;

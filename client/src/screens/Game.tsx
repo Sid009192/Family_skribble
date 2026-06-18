@@ -15,7 +15,7 @@
  * we'll style those in the next pass. For now they keep the existing look.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { RoomApi } from "../useRoom";
 import { BRUSH_SIZES } from "@shared/types";
 import { PlayerList } from "../components/PlayerList";
@@ -158,7 +158,11 @@ export function Game({ api, meId, onOpenAdmin }: Props) {
               panel still receives the full history. */}
           <ChatToasts messages={messages} />
 
-          {room.paused && <Overlay>⏸ Paused by admin</Overlay>}
+          {room.paused && (
+            api.drawerDisconnected
+              ? <DrawerReconnectOverlay info={api.drawerDisconnected} />
+              : <Overlay>⏸ Paused by admin</Overlay>
+          )}
 
           {room.phase === "choosing" &&
             (isDrawer ? (
@@ -226,6 +230,7 @@ export function Game({ api, meId, onOpenAdmin }: Props) {
             players={room.players}
             hostId={room.hostId}
             meId={meId}
+            drawerId={room.drawerId ?? undefined}
             canKick={api.isAdmin}
             onKick={api.kick}
           />
@@ -247,6 +252,36 @@ function Overlay({ children }: { children: React.ReactNode }) {
     <div className="canvas-overlay">
       <div className="canvas-overlay-inner">{children}</div>
     </div>
+  );
+}
+
+function DrawerReconnectOverlay({
+  info,
+}: {
+  info: { name: string; seconds: number; since: number };
+}) {
+  const [remaining, setRemaining] = useState(() => {
+    const elapsed = Math.floor((Date.now() - info.since) / 1000);
+    return Math.max(0, info.seconds - elapsed);
+  });
+  const rafRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    rafRef.current = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - info.since) / 1000);
+      setRemaining(Math.max(0, info.seconds - elapsed));
+    }, 500);
+    return () => {
+      if (rafRef.current) clearInterval(rafRef.current);
+    };
+  }, [info.since, info.seconds]);
+
+  return (
+    <Overlay>
+      <p className="drawer-reconnect-name">{info.name} lost connection!</p>
+      <p className="drawer-reconnect-sub">Waiting for them to return...</p>
+      <div className="drawer-reconnect-countdown">{remaining}</div>
+    </Overlay>
   );
 }
 

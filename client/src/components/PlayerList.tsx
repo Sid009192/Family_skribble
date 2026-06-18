@@ -17,12 +17,14 @@ interface Props {
   players: Player[];
   hostId: string;
   meId?: string;
+  /** The player currently drawing — shows the pen icon on their row. */
+  drawerId?: string;
   /** If true, show a kick button next to other players. */
   canKick?: boolean;
   onKick?: (targetId: string) => void;
 }
 
-export function PlayerList({ players, hostId, meId, canKick, onKick }: Props) {
+export function PlayerList({ players, hostId, meId, drawerId, canKick, onKick }: Props) {
   // Rank by points; stable for equal scores via original order.
   const ranked = [...players]
     .map((p, i) => ({ p, originalIndex: i }))
@@ -41,10 +43,15 @@ export function PlayerList({ players, hostId, meId, canKick, onKick }: Props) {
           </div>
 
           <div className="player-info">
-            <span className="player-name">
-              {p.name}
-              {p.id === meId && <span className="you-tag"> (You)</span>}
-            </span>
+            <div className="player-name-row">
+              <span className="player-name">
+                {p.name}
+                {p.id === meId && <span className="you-tag"> (You)</span>}
+              </span>
+              {drawerId && p.id === drawerId && (
+                <img className="pen-badge" src="/img/pen.gif" alt="drawing" title="Currently drawing" />
+              )}
+            </div>
             <span className="player-points">{p.score} points</span>
           </div>
 

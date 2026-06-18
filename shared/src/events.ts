@@ -135,6 +135,35 @@ export interface ServerToClientEvents {
   /** The current list of public rooms on the network. */
   roomList: (rooms: RoomSummary[]) => void;
 
+  /**
+   * A reconnect token the client must persist in localStorage. Sent once after
+   * a successful createRoom / joinRoom so the player can reclaim their slot if
+   * their socket drops (phone sleep, brief wifi blip, etc.).
+   */
+  sessionToken: (token: string) => void;
+
+  /** A player's socket dropped unexpectedly (not a deliberate leave). */
+  playerDisconnected: (payload: { name: string }) => void;
+
+  /**
+   * A previously-disconnected player successfully reconnected.
+   * oldId / newId let the client update its player-id diff so join/leave
+   * sounds don't fire spuriously when the socket id changes.
+   */
+  playerReconnected: (payload: { oldId: string; newId: string; name: string }) => void;
+
+  /**
+   * The current drawer lost connection; the game is pausing for up to
+   * `seconds` seconds to give them a chance to reconnect.
+   */
+  drawerDisconnecting: (payload: { name: string; seconds: number }) => void;
+
+  /**
+   * Sent to a reconnecting client when their previous room no longer exists
+   * (game ended or server restarted while they were away).
+   */
+  gameEndedWhileAway: () => void;
+
   /* --- Drawing --- */
 
   /** The authoritative full canvas (on request, and after undo/clear). */

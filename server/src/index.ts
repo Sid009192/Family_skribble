@@ -31,8 +31,18 @@ import {
   createRoom,
   getRoom,
   listPublicRooms,
+  markDisconnected,
+  reconnectPlayer,
   removePlayer,
 } from "./rooms.js";
+import {
+  clearSession,
+  clearSessionBySocket,
+  generateToken,
+  getSessionByToken,
+  getTokenBySocket,
+  saveSession,
+} from "./sessions.js";
 import { cleanAvatar, cleanName, cleanRoomCode, cleanSettings } from "./validate.js";
 import { verifyAdminKey } from "./admin.js";
 import {
@@ -56,8 +66,10 @@ import {
   cleanupGame,
   handleChat,
   initGame,
+  onPlayerDisconnected,
   onPlayerJoined,
   onPlayerLeft,
+  onPlayerReconnected,
   rateDrawing,
   returnToLobby,
   startGame,
@@ -121,6 +133,7 @@ function kickFromRoom(code: string, targetId: string, reason: string) {
 
   const targetSocket = io.sockets.sockets.get(targetId);
   if (targetSocket) {
+    clearSessionBySocket(targetId);
     targetSocket.emit("kicked", { reason });
     targetSocket.leave(code);
     targetSocket.data.roomCode = undefined;
@@ -141,10 +154,52 @@ function kickFromRoom(code: string, targetId: string, reason: string) {
 
 io.on("connection", (socket) => {
   socket.data.isAdmin = false;
-  console.log(`[socket] connected: ${socket.id}`);
 
-  // Send the current room list right away so the Home screen can populate.
-  socket.emit("roomList", listPublicRooms());
+  // --- Reconnect path ---------------------------------------------------
+  // If the client sends a token (from localStorage), try to restore them into
+  // their previous room without going through create/join again.
+  const authToken = (socket.handshake.auth as { token?: unknown })?.token;
+  if (typeof authToken === "string" && authToken) {
+    const session = getSessionByToken(authToken);
+    if (session) {
+      const room = getRoom(session.roomCode);
+      const player = room?.players.find((p) => p.id === session.socketId);
+      if (room && player) {
+        const oldId = session.socketId;
+        const updatedRoom = reconnectPlayer(session.roomCode, oldId, socket.id);
+        if (updatedRoom) {
+          saveSession(authToken, socket.id, session.roomCode, session.name, session.avatar);
+          socket.data.roomCode = session.roomCode;
+          socket.join(session.roomCode);
+          onPlayerReconnected(session.roomCode, oldId, socket.id);
+          // Notify everyone in the room (sound + chat + updated player list).
+          io.to(session.roomCode).emit("playerReconnected", {
+            oldId,
+            newId: socket.id,
+            name: player.name,
+          });
+          broadcastSystem(session.roomCode, `${player.name} reconnected!`);
+          io.to(session.roomCode).emit("roomState", updatedRoom);
+          // Give the rejoiner their current canvas.
+          socket.emit("canvasState", getOps(session.roomCode));
+          broadcastRoomList();
+          console.log(`[reconnect] ${player.name} back in ${session.roomCode} (${oldId} → ${socket.id})`);
+        }
+      } else if (!room) {
+        // Their room is gone (game ended, server restarted).
+        socket.emit("gameEndedWhileAway");
+        clearSession(authToken);
+      }
+      // If room exists but player slot is gone (shouldn't normally happen),
+      // fall through to normal new-player flow below.
+    }
+  }
+
+  // --- Normal / new connection ------------------------------------------
+  if (!socket.data.roomCode) {
+    console.log(`[socket] connected: ${socket.id}`);
+    socket.emit("roomList", listPublicRooms());
+  }
 
   socket.on("requestRoomList", () => {
     socket.emit("roomList", listPublicRooms());
@@ -166,8 +221,12 @@ io.on("connection", (socket) => {
     const room = createRoom(socket.id, name, avatar, isPublic);
     socket.data.roomCode = room.code;
     socket.join(room.code); // Socket.IO "rooms" let us broadcast to just this group
+    // Issue a reconnect token so this player can reclaim their slot if they drop.
+    const tok = generateToken();
+    saveSession(tok, socket.id, room.code, name, avatar);
     console.log(`[room] ${name} created room ${room.code} (${isPublic ? "public" : "private"})`);
     callback({ ok: true, room });
+    socket.emit("sessionToken", tok);
     broadcastRoomList();
   });
 
@@ -187,9 +246,13 @@ io.on("connection", (socket) => {
 
     socket.data.roomCode = code;
     socket.join(code);
+    // Issue a reconnect token.
+    const tok = generateToken();
+    saveSession(tok, socket.id, code, name, avatar);
     console.log(`[room] ${name} joined room ${code}`);
 
     callback({ ok: true, room: outcome.room });
+    socket.emit("sessionToken", tok);
     // Tell EVERYONE in the room (including the joiner) the new player list.
     io.to(code).emit("roomState", outcome.room);
     broadcastRoomList(); // player counts changed
@@ -375,27 +438,27 @@ io.on("connection", (socket) => {
     })
   );
 
-  // --- Leave / disconnect both funnel through one handler ----------------
+  // --- Intentional leave (leaveRoom event or kick) -----------------------
   function handleLeave() {
     const code = socket.data.roomCode;
     if (!code) return;
-    const result = removePlayer(code, socket.id);
+    // Clear the session so a stale token can't re-admit them.
+    clearSessionBySocket(socket.id);
+    const leavingId = socket.id;
+    const result = removePlayer(code, leavingId);
     socket.leave(code);
     socket.data.roomCode = undefined;
     if (result) {
-      // Room still exists: broadcast the updated list, and let the game engine
-      // react (e.g. skip the turn if the drawer left, or end if too few remain).
       io.to(code).emit("roomState", result.room);
       if (result.promotedHostName) {
         broadcastSystem(code, `${result.promotedHostName} is now the room owner!`);
       }
-      onPlayerLeft(code, socket.id);
+      onPlayerLeft(code, leavingId);
     } else {
-      // Room is now empty: free its canvas + game memory.
       deleteCanvas(code);
       cleanupGame(code);
     }
-    broadcastRoomList(); // counts changed, or a room disappeared
+    broadcastRoomList();
   }
 
   // --- Host kicks a player -----------------------------------------------
@@ -421,7 +484,33 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", (reason) => {
     console.log(`[socket] disconnected: ${socket.id} (${reason})`);
-    handleLeave();
+    const code = socket.data.roomCode;
+    if (!code) return;
+
+    const room = getRoom(code);
+    const player = room?.players.find((p) => p.id === socket.id);
+
+    if (player) {
+      // Soft disconnect: keep the player's slot so they can reconnect.
+      // Ensure a session exists for them (it should, from create/join).
+      const existingToken = getTokenBySocket(socket.id);
+      if (!existingToken) {
+        // Safety net: session was somehow missing; create one now.
+        const tok = generateToken();
+        saveSession(tok, socket.id, code, player.name, player.avatar);
+      }
+      markDisconnected(code, socket.id);
+      socket.leave(code);
+      socket.data.roomCode = undefined;
+
+      io.to(code).emit("roomState", room!);
+      broadcastSystem(code, `${player.name} lost connection...`);
+      io.to(code).emit("playerDisconnected", { name: player.name });
+      onPlayerDisconnected(code, socket.id);
+      broadcastRoomList();
+    } else {
+      // Not in a room — nothing to do.
+    }
   });
 });
 

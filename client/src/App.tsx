@@ -95,13 +95,47 @@ export function App() {
     screen = <Game api={api} meId={meId} onOpenAdmin={openAdmin} />;
   }
 
+  // Show a "reconnecting" overlay when OUR socket drops while we're in a room.
+  // (If we're on the Home screen with no room, the loss is less disruptive.)
+  const showReconnecting = !api.connected && api.room !== null;
+
   return (
     <>
       {screen}
       {adminOpen && <AdminModal api={api} meId={meId} onClose={() => setAdminOpen(false)} />}
       {introVisible && <Intro onDone={dismissIntro} />}
       {devBundle && <DevModeBanner text={devBundle.bannerText} />}
+      {showReconnecting && <ReconnectingOverlay />}
+      {realApi.gameEndedWhileAway && (
+        <GameEndedBanner onDismiss={realApi.dismissGameEndedWhileAway} />
+      )}
     </>
+  );
+}
+
+function ReconnectingOverlay() {
+  return (
+    <div className="reconnect-overlay">
+      <div className="reconnect-card">
+        <div className="reconnect-spinner" />
+        <p className="reconnect-title">Reconnecting...</p>
+        <p className="reconnect-sub">You'll be right back where you left off.</p>
+      </div>
+    </div>
+  );
+}
+
+function GameEndedBanner({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <div className="reconnect-overlay" onClick={onDismiss}>
+      <div className="reconnect-card">
+        <p className="reconnect-title">Game Over!</p>
+        <p className="reconnect-sub">The game ended while you were away.</p>
+        <button className="btn primary" style={{ marginTop: 12 }} onClick={onDismiss}>
+          Back to Home
+        </button>
+      </div>
+    </div>
   );
 }
 

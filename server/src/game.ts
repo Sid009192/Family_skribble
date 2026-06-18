@@ -35,6 +35,8 @@ type IO = Server<
 const CHOOSE_SECONDS = 15; // time the drawer has to pick a word
 const REVEAL_SECONDS = 5; // how long the end-of-turn reveal shows
 const MAX_SCORE = 999999;
+const DRAWER_RECONNECT_SECONDS = 20; // pause window when the drawer drops
+const NO_GUESSERS_SECONDS = 20; // pause window when all guessers are gone
 
 interface GameState {
   word: string;
@@ -49,6 +51,10 @@ interface GameState {
 }
 
 const games = new Map<string, GameState>();
+// Per-room timeout handles for the "drawer reconnect" grace period.
+const drawerDisconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+// Per-room timeout handles for the "no guessers left" grace period.
+const noGuessersTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 let io: IO;
 export function initGame(server: IO): void {
@@ -82,7 +88,7 @@ export function startGame(code: string): void {
     word: "",
     choices: [],
     revealed: new Set(),
-    order: room.players.map((p) => p.id),
+    order: [...room.players].reverse().map((p) => p.id),
     turnIndex: 0,
     guessed: new Set(),
     gained: new Map(),
@@ -178,15 +184,32 @@ export function handleChat(id: string, code: string, rawText: unknown): void {
   io.to(code).emit("chat", { kind: "normal", name: player.name, text });
 }
 
+/** Called on an intentional leave or kick. Hard-removes the player from game logic. */
 export function onPlayerLeft(code: string, id: string): void {
   const room = getRoom(code);
   const g = games.get(code);
   if (!room || !g) return;
 
+  // Cancel any drawer-reconnect timer for this room if the drawer intentionally left.
+  if (room.drawerId === id) {
+    const t = drawerDisconnectTimers.get(code);
+    if (t) { clearTimeout(t); drawerDisconnectTimers.delete(code); }
+    if (g.paused) { g.paused = false; room.paused = false; }
+  }
+
   if (room.players.length < 2) {
     endGame(code);
     return;
   }
+
+  const inActivePhase = room.phase === "choosing" || room.phase === "drawing";
+
+  // A guesser left and no connected guessers remain — pause and wait.
+  if (inActivePhase && id !== room.drawerId && !hasActiveGuessers(room)) {
+    startNoGuessersCountdown(code);
+    return;
+  }
+
   if (room.phase === "choosing" && id === room.drawerId) {
     nextTurn(code);
   } else if (room.phase === "drawing") {
@@ -198,15 +221,154 @@ export function onPlayerLeft(code: string, id: string): void {
   }
 }
 
+/**
+ * Called when a player's socket drops unexpectedly (NOT an intentional leave).
+ * Their slot stays in the room; we just react to losing them temporarily.
+ */
+export function onPlayerDisconnected(code: string, id: string): void {
+  const room = getRoom(code);
+  const g = games.get(code);
+  if (!room || !g) return;
+
+  if (room.phase === "choosing" && id === room.drawerId) {
+    // They can't pick a word while offline — skip the turn.
+    nextTurn(code);
+  } else if (room.phase === "drawing") {
+    if (id === room.drawerId) {
+      // Pause and give them DRAWER_RECONNECT_SECONDS to come back.
+      g.paused = true;
+      room.paused = true;
+      const drawerName = room.players.find((p) => p.id === id)?.name ?? "Drawer";
+      io.to(code).emit("drawerDisconnecting", { name: drawerName, seconds: DRAWER_RECONNECT_SECONDS });
+      broadcast(room);
+
+      const timer = setTimeout(() => {
+        drawerDisconnectTimers.delete(code);
+        const r = getRoom(code);
+        const gs = games.get(code);
+        if (r && gs && gs.paused) {
+          gs.paused = false;
+          r.paused = false;
+          endTurn(code);
+        }
+      }, DRAWER_RECONNECT_SECONDS * 1000);
+      drawerDisconnectTimers.set(code, timer);
+    } else {
+      // A guesser dropped.
+      g.guessed.delete(id);
+      if (!hasActiveGuessers(room)) {
+        // No connected guessers left — pause and wait.
+        startNoGuessersCountdown(code);
+      } else if (everyoneGuessed(room, g)) {
+        endTurn(code);
+      }
+    }
+  }
+
+  // Guesser disconnects during choosing phase: check if everyone is gone.
+  if (room.phase === "choosing" && id !== room.drawerId && !hasActiveGuessers(room)) {
+    startNoGuessersCountdown(code);
+  }
+}
+
+/**
+ * Called when a previously-disconnected player's new socket is matched to their
+ * old slot. Updates their id in all game-internal sets/arrays.
+ */
+export function onPlayerReconnected(code: string, oldId: string, newId: string): void {
+  const room = getRoom(code);
+  const g = games.get(code);
+  if (!g) return;
+
+  // Update draw order.
+  const i = g.order.indexOf(oldId);
+  if (i !== -1) g.order[i] = newId;
+
+  // Update guessed set.
+  if (g.guessed.has(oldId)) {
+    g.guessed.delete(oldId);
+    g.guessed.add(newId);
+  }
+
+  // If it was the drawer who just came back, cancel the skip timer and unpause.
+  // (room.drawerId was already updated to newId by reconnectPlayer in rooms.ts)
+  const timer = drawerDisconnectTimers.get(code);
+  if (room && g.paused && timer && room.drawerId === newId) {
+    clearTimeout(timer);
+    drawerDisconnectTimers.delete(code);
+    g.paused = false;
+    room.paused = false;
+    // Re-send their word so they can continue drawing.
+    io.to(newId).emit("yourWord", g.word);
+    broadcast(room);
+  }
+
+  // A guesser reconnected — cancel the no-guessers countdown if active.
+  if (room && room.drawerId !== newId) {
+    cancelNoGuessersCountdown(code);
+  }
+}
+
 export function onPlayerJoined(code: string, id: string): void {
   const g = games.get(code);
   if (g && !g.order.includes(id)) g.order.push(id);
+  // A new guesser joining mid-game cancels the no-guessers countdown.
+  const room = getRoom(code);
+  if (room && id !== room.drawerId) cancelNoGuessersCountdown(code);
+}
+
+/** True when at least one non-drawer player is still connected. */
+function hasActiveGuessers(room: Room): boolean {
+  return room.players.some((p) => p.id !== room.drawerId && p.connected);
+}
+
+/** Pause and start the 20-second countdown; fires endGame if no one rejoins. */
+function startNoGuessersCountdown(code: string): void {
+  if (noGuessersTimers.has(code)) return; // already counting
+  const room = getRoom(code);
+  const g = games.get(code);
+  if (!room || !g) return;
+  g.paused = true;
+  room.paused = true;
+  broadcast(room);
+  io.to(code).emit("chat", {
+    kind: "system",
+    name: "",
+    text: "Everyone else left! Waiting 20 seconds for someone to rejoin…",
+  });
+  const timer = setTimeout(() => {
+    noGuessersTimers.delete(code);
+    const r = getRoom(code);
+    const gs = games.get(code);
+    if (r && gs) endGame(code);
+  }, NO_GUESSERS_SECONDS * 1000);
+  noGuessersTimers.set(code, timer);
+}
+
+/** Cancel the no-guessers countdown and unpause (called when a player rejoins). */
+function cancelNoGuessersCountdown(code: string): void {
+  const timer = noGuessersTimers.get(code);
+  if (!timer) return;
+  clearTimeout(timer);
+  noGuessersTimers.delete(code);
+  const room = getRoom(code);
+  const g = games.get(code);
+  // Only unpause if the drawer-disconnect timer isn't also holding the pause.
+  if (room && g && g.paused && !drawerDisconnectTimers.has(code)) {
+    g.paused = false;
+    room.paused = false;
+    broadcast(room);
+  }
 }
 
 export function cleanupGame(code: string): void {
   const g = games.get(code);
   if (g?.ticker) clearInterval(g.ticker);
   games.delete(code);
+  const t = drawerDisconnectTimers.get(code);
+  if (t) { clearTimeout(t); drawerDisconnectTimers.delete(code); }
+  const ng = noGuessersTimers.get(code);
+  if (ng) { clearTimeout(ng); noGuessersTimers.delete(code); }
 }
 
 /* ------------------------------------------------------------------ *
@@ -274,7 +436,7 @@ function beginTurn(code: string): void {
   if (!room || !g) return;
   if (room.players.length < 2) return endGame(code);
 
-  while (g.turnIndex < g.order.length && !room.players.some((p) => p.id === g.order[g.turnIndex])) {
+  while (g.turnIndex < g.order.length && !room.players.some((p) => p.id === g.order[g.turnIndex] && p.connected)) {
     g.turnIndex++;
   }
   if (g.turnIndex >= g.order.length) {
@@ -405,6 +567,12 @@ function endGame(code: string): void {
   room.timeLeft = 0;
   room.paused = false;
   broadcast(room);
+
+  // Auto-return to lobby after 8 seconds so everyone lands back together.
+  setTimeout(() => {
+    const r = getRoom(code);
+    if (r && r.phase === "gameover") returnToLobby(code);
+  }, 8000);
 }
 
 /* ------------------------------------------------------------------ *
@@ -434,8 +602,12 @@ function registerCorrectGuess(
 }
 
 function everyoneGuessed(room: Room, g: GameState): boolean {
-  const nonDrawers = room.players.filter((p) => p.id !== room.drawerId);
-  return nonDrawers.length > 0 && nonDrawers.every((p) => g.guessed.has(p.id));
+  // Only count connected non-drawers so a disconnected guesser doesn't block
+  // the turn from ending.
+  const activeGuessers = room.players.filter(
+    (p) => p.id !== room.drawerId && p.connected,
+  );
+  return activeGuessers.length > 0 && activeGuessers.every((p) => g.guessed.has(p.id));
 }
 
 function sendToInsiders(room: Room, g: GameState, msg: ChatMessage): void {

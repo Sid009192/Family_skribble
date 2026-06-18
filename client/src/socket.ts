@@ -15,6 +15,7 @@
 
 import { io, type Socket } from "socket.io-client";
 import type { ClientToServerEvents, ServerToClientEvents } from "@shared/events";
+import { loadToken } from "./prefs";
 
 const SERVER_PORT = 3001;
 const envUrl = import.meta.env.VITE_SERVER_URL as string | undefined;
@@ -23,10 +24,15 @@ const serverUrl =
     ? envUrl
     : `${window.location.protocol}//${window.location.hostname}:${SERVER_PORT}`;
 
-// The <generics> give us full type-checking + autocomplete on every event.
+// Pass any saved token so the server can restore us into our previous room on
+// reconnect (e.g. after the phone wakes from sleep). The token is updated via
+// socket.auth whenever the server issues a new one (see useRoom.ts).
+const savedToken = loadToken();
+
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
   serverUrl,
   {
     autoConnect: true,
+    auth: savedToken ? { token: savedToken } : {},
   }
 );

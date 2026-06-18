@@ -171,7 +171,19 @@ export function reconnectPlayer(
   p.connected = true;
   if (room.hostId === oldId) room.hostId = newId;
   if (room.drawerId === oldId) room.drawerId = newId;
+  // Move the reconnected player to the end of the list so they appear at the
+  // bottom of the player row (they'll re-earn their visual position next game).
+  const idx = room.players.indexOf(p);
+  if (idx !== -1 && idx !== room.players.length - 1) {
+    room.players.splice(idx, 1);
+    room.players.push(p);
+  }
   return room;
+}
+
+/** Hard-delete a room entirely (used when all players abandon it). */
+export function deleteRoom(code: string): void {
+  rooms.delete(code);
 }
 
 export function removePlayer(code: string, id: string): RemoveResult | undefined {

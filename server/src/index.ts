@@ -29,6 +29,7 @@ import type {
 import {
   addPlayer,
   createRoom,
+  deleteRoom,
   getRoom,
   listPublicRooms,
   markDisconnected,
@@ -81,6 +82,34 @@ const IS_PROD = process.env.NODE_ENV === "production";
 
 /** How many bad `adminUnlock` tries one socket connection gets before lockout. */
 const ADMIN_UNLOCK_MAX_ATTEMPTS = 3;
+
+// When all players in a room disconnect, we wait this long before deleting it.
+const EMPTY_ROOM_TTL_MS = 30_000;
+const emptyRoomTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function scheduleEmptyRoomCleanup(code: string): void {
+  if (emptyRoomTimers.has(code)) return;
+  const timer = setTimeout(() => {
+    emptyRoomTimers.delete(code);
+    const room = getRoom(code);
+    if (room && room.players.every((p) => !p.connected)) {
+      deleteCanvas(code);
+      cleanupGame(code);
+      deleteRoom(code);
+      broadcastRoomList();
+      console.log(`[room] ${code} deleted — all players gone for ${EMPTY_ROOM_TTL_MS / 1000}s`);
+    }
+  }, EMPTY_ROOM_TTL_MS);
+  emptyRoomTimers.set(code, timer);
+}
+
+function cancelEmptyRoomCleanup(code: string): void {
+  const timer = emptyRoomTimers.get(code);
+  if (timer) {
+    clearTimeout(timer);
+    emptyRoomTimers.delete(code);
+  }
+}
 
 // CORS = "who is allowed to talk to this server?".
 // In production we lock it to our known client origin. In local dev we reflect
@@ -165,6 +194,8 @@ io.on("connection", (socket) => {
       const room = getRoom(session.roomCode);
       const player = room?.players.find((p) => p.id === session.socketId);
       if (room && player) {
+        // Someone is coming back — cancel any pending room deletion.
+        cancelEmptyRoomCleanup(session.roomCode);
         const oldId = session.socketId;
         const updatedRoom = reconnectPlayer(session.roomCode, oldId, socket.id);
         if (updatedRoom) {
@@ -507,6 +538,12 @@ io.on("connection", (socket) => {
       broadcastSystem(code, `${player.name} lost connection...`);
       io.to(code).emit("playerDisconnected", { name: player.name });
       onPlayerDisconnected(code, socket.id);
+
+      // If everyone is now disconnected, schedule the room for deletion.
+      if (room!.players.every((p) => !p.connected)) {
+        scheduleEmptyRoomCleanup(code);
+      }
+
       broadcastRoomList();
     } else {
       // Not in a room — nothing to do.

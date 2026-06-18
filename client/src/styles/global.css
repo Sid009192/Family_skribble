@@ -2738,3 +2738,130 @@ button.ghost {
   color: #fff;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
+
+/* ── Join-request toast (shown to host / admin in active games) ─── */
+.join-toast-stack {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.join-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 2px solid #124da5;
+  border-radius: 12px;
+  padding: 8px 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  min-width: 220px;
+  max-width: 280px;
+  pointer-events: all;
+  animation: toastSlideIn 0.25s ease;
+}
+
+@keyframes toastSlideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.join-toast-avatar {
+  flex: 0 0 auto;
+}
+
+.join-toast-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.join-toast-name {
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.join-toast-label {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.join-toast-actions {
+  display: flex;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+
+.join-toast-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.join-toast-btn.approve {
+  background: #2ecc71;
+  color: #fff;
+}
+
+.join-toast-btn.deny {
+  background: #e74c3c;
+  color: #fff;
+}
+
+/* ── Active-room badge in the join modal list ──────────────────── */
+.room-phase-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  background: #e74c3c;
+  color: #fff;
+  border-radius: 4px;
+  padding: 1px 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.room-active {
+  opacity: 0.92;
+}
+
+/* ── Pending-approval modal ────────────────────────────────────── */
+.pending-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 36px;
+}
+
+.pending-spinner {
+  width: 48px;
+  height: 48px;
+  border: 5px solid #e0e0e0;
+  border-top-color: #124da5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.pending-text {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #124da5;
+  margin: 0;
+}

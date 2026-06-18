@@ -17,6 +17,7 @@ import { Home } from "./screens/Home";
 import { Lobby } from "./screens/Lobby";
 import { Game } from "./screens/Game";
 import { AdminModal } from "./components/AdminModal";
+import { JoinRequestToast } from "./components/JoinRequestToast";
 import { Intro } from "./components/Intro";
 import { socket } from "./socket";
 
@@ -83,8 +84,11 @@ export function App() {
         connected={api.connected}
         notice={api.notice}
         roomList={api.roomList}
+        pendingApproval={api.pendingApproval}
         onCreate={api.createRoom}
         onJoin={api.joinRoom}
+        onJoinActive={api.requestJoinActive}
+        onCancelApproval={api.cancelPendingApproval}
         onDismissNotice={api.clearNotice}
         onOpenAdmin={openAdmin}
       />
@@ -109,6 +113,10 @@ export function App() {
       {realApi.gameEndedWhileAway && (
         <GameEndedBanner onDismiss={realApi.dismissGameEndedWhileAway} />
       )}
+      <JoinRequestToast
+        requests={realApi.incomingJoinRequests}
+        onRespond={realApi.respondJoinRequest}
+      />
     </>
   );
 }

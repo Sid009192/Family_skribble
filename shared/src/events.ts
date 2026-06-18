@@ -30,6 +30,11 @@ export interface JoinResult {
   error?: string;
   /** Present when ok === true — the room you're now in. */
   room?: Room;
+  /**
+   * True when joining an active game that needs host approval.
+   * The socket connection stays alive; joinApproved / joinDenied will follow.
+   */
+  pending?: boolean;
 }
 
 /**
@@ -122,6 +127,20 @@ export interface ClientToServerEvents {
   adminKick: (payload: { targetId: string }) => void;
   /** Toggle a player's mute (their chat/guesses hidden from everyone). */
   adminMute: (payload: { targetId: string }) => void;
+
+  /**
+   * Request to join an active (in-progress) game.
+   * If a disconnected slot with the same name exists the server reconnects
+   * immediately (ok: true). Otherwise the host gets a joinRequest notification
+   * and the ack returns { ok: false, pending: true }.
+   */
+  requestJoinActive: (
+    payload: { code: string; name: string; avatar: Avatar },
+    callback: (result: JoinResult) => void
+  ) => void;
+
+  /** Host or admin approves / denies a pending join request. */
+  respondJoinRequest: (payload: { requestId: string; approved: boolean }) => void;
 }
 
 /** Messages the SERVER can send TO the client. */
@@ -185,6 +204,13 @@ export interface ServerToClientEvents {
   turnReveal: (payload: { word: string; gained: Record<string, number> }) => void;
   /** A chat line to display. */
   chat: (message: ChatMessage) => void;
+
+  /** Sent to host + admin when someone wants to join the active game. */
+  joinRequest: (payload: { requestId: string; name: string; avatar: Avatar }) => void;
+  /** Sent to the requester when the host approves their join request. */
+  joinApproved: (payload: { room: Room }) => void;
+  /** Sent to the requester when the host denies (or times out on) their request. */
+  joinDenied: (payload: { reason: string }) => void;
 }
 
 /** Server-to-server events (unused for now, required by Socket.IO's types). */

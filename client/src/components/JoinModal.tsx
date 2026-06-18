@@ -3,10 +3,11 @@
  *
  * Two ways to join from here:
  *  1. Type a 5-letter room code (any room, public OR private).
- *  2. Tap a row in the live network list (public rooms only).
+ *  2. Tap a row in the live network list (public rooms only, lobby OR active).
  *
- * The modal slides+fades in (handled by CSS keyframes). When a join succeeds
- * the parent unmounts us; if it fails we surface the error inline.
+ * For active-game rooms the server will auto-reconnect if you were there, or
+ * send a joinRequest to the host. In that case `pendingApproval` becomes true
+ * and this modal shows a "Waiting for host…" message instead of closing.
  */
 
 import { useEffect, useState } from "react";
@@ -16,35 +17,67 @@ import type { JoinResult } from "@shared/events";
 
 interface Props {
   roomList: RoomSummary[];
-  canJoin: boolean; // false until we have a valid name + the socket is connected
+  canJoin: boolean;
+  pendingApproval: boolean;
   onJoin: (code: string) => Promise<JoinResult>;
+  onJoinActive: (code: string) => Promise<JoinResult>;
   onClose: () => void;
+  onCancelApproval: () => void;
 }
 
-export function JoinModal({ roomList, canJoin, onJoin, onClose }: Props) {
+export function JoinModal({ roomList, canJoin, pendingApproval, onJoin, onJoinActive, onClose, onCancelApproval }: Props) {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Close on Escape — a nice keyboard nicety since this is a modal.
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !pendingApproval) onClose();
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, [onClose]);
+  }, [onClose, pendingApproval]);
 
-  async function tryJoin(c: string) {
+  // Clear error when pendingApproval changes (denied = error shows in Home notice).
+  useEffect(() => {
+    if (!pendingApproval) setError(null);
+  }, [pendingApproval]);
+
+  async function tryJoin(c: string, isActive: boolean) {
     setError(null);
     setBusy(true);
-    const res = await onJoin(c);
+    const res = isActive ? await onJoinActive(c) : await onJoin(c);
     setBusy(false);
+    if (res.pending) {
+      // pendingApproval state is now true in useRoom; keep modal open.
+      return;
+    }
     if (!res.ok) setError(res.error ?? "Couldn't join that room.");
+    // If ok, parent will unmount us (room state changed → App re-routes).
   }
 
   const trimmed = code.trim();
   const codeOk = trimmed.length === ROOM_CODE_LENGTH;
+
+  if (pendingApproval) {
+    return (
+      <div className="modal-overlay">
+        <div className="join-modal pending-modal">
+          <div className="pending-spinner" />
+          <p className="pending-text">Waiting for host approval…</p>
+          <button
+            className="secondary"
+            onClick={() => {
+              onCancelApproval();
+              onClose();
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -72,7 +105,7 @@ export function JoinModal({ roomList, canJoin, onJoin, onClose }: Props) {
             />
             <button
               className="secondary"
-              onClick={() => tryJoin(trimmed)}
+              onClick={() => tryJoin(trimmed, false)}
               disabled={!canJoin || !codeOk || busy}
             >
               Join
@@ -91,28 +124,32 @@ export function JoinModal({ roomList, canJoin, onJoin, onClose }: Props) {
             <p className="empty-rooms">No public rooms yet. Create one or wait.</p>
           ) : (
             <ul className="room-list-modal">
-              {roomList.map((r, idx) => (
-                <li
-                  key={r.code}
-                  className="room-item-modal"
-                  style={{ animationDelay: `${idx * 40}ms` }}
-                >
-                  <div className="room-info">
-                    <strong className="room-code">{r.code}</strong>
-                    <span className="room-host">{r.hostName}</span>
-                  </div>
-                  <span className="room-count">
-                    {r.playerCount}/{MAX_PLAYERS}
-                  </span>
-                  <button
-                    className="secondary"
-                    disabled={!canJoin || busy}
-                    onClick={() => tryJoin(r.code)}
+              {roomList.map((r, idx) => {
+                const isActive = r.phase !== "lobby";
+                return (
+                  <li
+                    key={r.code}
+                    className={`room-item-modal${isActive ? " room-active" : ""}`}
+                    style={{ animationDelay: `${idx * 40}ms` }}
                   >
-                    Join
-                  </button>
-                </li>
-              ))}
+                    <div className="room-info">
+                      <strong className="room-code">{r.code}</strong>
+                      <span className="room-host">{r.hostName}</span>
+                      {isActive && <span className="room-phase-badge">In Game</span>}
+                    </div>
+                    <span className="room-count">
+                      {r.playerCount}/{MAX_PLAYERS}
+                    </span>
+                    <button
+                      className="secondary"
+                      disabled={!canJoin || busy}
+                      onClick={() => tryJoin(r.code, isActive)}
+                    >
+                      {isActive ? "Request" : "Join"}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
@@ -120,4 +157,3 @@ export function JoinModal({ roomList, canJoin, onJoin, onClose }: Props) {
     </div>
   );
 }
-

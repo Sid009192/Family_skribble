@@ -12,6 +12,12 @@ import type { JoinResult, SettingsUpdate } from "@shared/events";
 import { play as playSound } from "./sounds";
 import { saveToken } from "./prefs";
 
+export interface IncomingJoinRequest {
+  requestId: string;
+  name: string;
+  avatar: Avatar;
+}
+
 const MAX_MESSAGES = 200;
 
 export function useRoom() {
@@ -46,6 +52,11 @@ export function useRoom() {
 
   // Set when the server tells us our previous room ended while we were away.
   const [gameEndedWhileAway, setGameEndedWhileAway] = useState(false);
+
+  // Pending host-approval join (we requested to join an active game).
+  const [pendingApproval, setPendingApproval] = useState(false);
+  // Join requests that this socket (as host/admin) needs to approve or deny.
+  const [incomingJoinRequests, setIncomingJoinRequests] = useState<IncomingJoinRequest[]>([]);
 
   // Refs for diffing previous state — used by the sound triggers so we can
   // fire on transitions (e.g. phase changed, player joined) rather than on
@@ -175,6 +186,23 @@ export function useRoom() {
       setGameEndedWhileAway(true);
     };
 
+    // Host/admin: someone wants to join the active game.
+    const onJoinRequest = (payload: IncomingJoinRequest) => {
+      setIncomingJoinRequests((prev) => [...prev, payload]);
+    };
+    // Us: the host approved our join request.
+    const onJoinApproved = (payload: { room: Room }) => {
+      setPendingApproval(false);
+      setRoom(payload.room);
+      seedPlayerIds(payload.room);
+      setMessages([]);
+    };
+    // Us: the host denied our join request.
+    const onJoinDenied = (payload: { reason: string }) => {
+      setPendingApproval(false);
+      setNotice(payload.reason);
+    };
+
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on("roomState", onRoomState);
@@ -190,6 +218,9 @@ export function useRoom() {
     socket.on("playerReconnected", onPlayerReconnected);
     socket.on("drawerDisconnecting", onDrawerDisconnecting);
     socket.on("gameEndedWhileAway", onGameEndedWhileAway);
+    socket.on("joinRequest", onJoinRequest);
+    socket.on("joinApproved", onJoinApproved);
+    socket.on("joinDenied", onJoinDenied);
 
     return () => {
       socket.off("connect", onConnect);
@@ -207,6 +238,9 @@ export function useRoom() {
       socket.off("playerReconnected", onPlayerReconnected);
       socket.off("drawerDisconnecting", onDrawerDisconnecting);
       socket.off("gameEndedWhileAway", onGameEndedWhileAway);
+      socket.off("joinRequest", onJoinRequest);
+      socket.off("joinApproved", onJoinApproved);
+      socket.off("joinDenied", onJoinDenied);
     };
   }, []);
 
@@ -263,6 +297,27 @@ export function useRoom() {
   const sendChat = (text: string) => socket.emit("chat", { text });
   const rateDrawing = (kind: "up" | "down") => socket.emit("rateDrawing", { kind });
 
+  /* --- join-active actions --- */
+  function requestJoinActive(code: string, name: string, avatar: Avatar): Promise<JoinResult> {
+    setNotice(null);
+    setMessages([]);
+    return new Promise((resolve) => {
+      socket.emit("requestJoinActive", { code, name, avatar }, (res) => {
+        if (res.ok && res.room) {
+          setRoom(res.room);
+          seedPlayerIds(res.room);
+        } else if (res.pending) {
+          setPendingApproval(true);
+        }
+        resolve(res);
+      });
+    });
+  }
+  function respondJoinRequest(requestId: string, approved: boolean) {
+    socket.emit("respondJoinRequest", { requestId, approved });
+    setIncomingJoinRequests((prev) => prev.filter((r) => r.requestId !== requestId));
+  }
+
   /* --- admin actions --- */
   function adminUnlock(key: string): Promise<boolean> {
     return new Promise((resolve) => {
@@ -297,8 +352,13 @@ export function useRoom() {
     drawerDisconnected,
     gameEndedWhileAway,
     dismissGameEndedWhileAway: () => setGameEndedWhileAway(false),
+    pendingApproval,
+    cancelPendingApproval: () => setPendingApproval(false),
+    incomingJoinRequests,
     createRoom,
     joinRoom,
+    requestJoinActive,
+    respondJoinRequest,
     leaveRoom,
     clearNotice,
     kick,

@@ -10,7 +10,11 @@
  * lives in validate.ts. Each file has one job.
  */
 
-import "dotenv/config";
+import dotenv from "dotenv";
+// override:true so values in server/.env win over any inherited env vars.
+// (Some launchers — e.g. the Claude preview MCP — inject PORT=5173 to tell the
+//  child which port to bind, but our server has its own port in .env.)
+dotenv.config({ override: true });
 import http from "node:http";
 import express from "express";
 import cors from "cors";
@@ -54,6 +58,7 @@ import {
   initGame,
   onPlayerJoined,
   onPlayerLeft,
+  rateDrawing,
   returnToLobby,
   startGame,
 } from "./game.js";
@@ -61,6 +66,9 @@ import {
 const PORT = Number(process.env.PORT ?? 3001);
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN ?? "http://localhost:5173";
 const IS_PROD = process.env.NODE_ENV === "production";
+
+/** How many bad `adminUnlock` tries one socket connection gets before lockout. */
+const ADMIN_UNLOCK_MAX_ATTEMPTS = 3;
 
 // CORS = "who is allowed to talk to this server?".
 // In production we lock it to our known client origin. In local dev we reflect
@@ -148,6 +156,12 @@ io.on("connection", (socket) => {
     if (!name) return callback({ ok: false, error: "Please enter a valid name." });
     const avatar = cleanAvatar(payload?.avatar);
 
+    // A socket can only be in one room at a time. If they bypass the normal
+    // "leave first" client flow (e.g. via DevTools), evict them from the old
+    // room before placing them in the new one — otherwise the old room ends
+    // up with a ghost player that the system never cleans up.
+    if (socket.data.roomCode) handleLeave();
+
     const isPublic = payload?.isPublic !== false; // default to public
     const room = createRoom(socket.id, name, avatar, isPublic);
     socket.data.roomCode = room.code;
@@ -163,6 +177,10 @@ io.on("connection", (socket) => {
     if (!name) return callback({ ok: false, error: "Please enter a valid name." });
     const code = cleanRoomCode(payload?.code);
     const avatar = cleanAvatar(payload?.avatar);
+
+    // Same single-room invariant as createRoom — evict from any existing
+    // room first so a tampered client can't end up in two rooms at once.
+    if (socket.data.roomCode && socket.data.roomCode !== code) handleLeave();
 
     const outcome = addPlayer(code, socket.id, name, avatar);
     if (!outcome.ok || !outcome.room) return callback(outcome);
@@ -267,6 +285,11 @@ io.on("connection", (socket) => {
     if (code) handleChat(socket.id, code, payload?.text);
   });
 
+  socket.on("rateDrawing", (payload) => {
+    const code = myRoom();
+    if (code) rateDrawing(socket.id, code, payload?.kind);
+  });
+
   socket.on("returnToLobby", () => {
     const code = myRoom();
     if (!code) return;
@@ -293,9 +316,25 @@ io.on("connection", (socket) => {
   // --- Super-Admin (godmode) --------------------------------------------
   // Unlock: prove the secret key ONCE; we then flag this socket as admin and
   // never ask again. Every admin action below re-checks the flag.
+  //
+  // Brute-force defense: each socket gets ADMIN_UNLOCK_MAX_ATTEMPTS tries
+  // before further attempts are refused without even checking the key. The
+  // counter is per-connection, so an attacker would have to keep opening
+  // fresh socket connections — which the legitimate user never needs to do.
   socket.on("adminUnlock", (payload, callback) => {
+    if (socket.data.isAdmin) return callback({ ok: true }); // already unlocked
+    const attempts = socket.data.adminUnlockAttempts ?? 0;
+    if (attempts >= ADMIN_UNLOCK_MAX_ATTEMPTS) {
+      console.warn(`[admin] socket ${socket.id} refused (>= ${ADMIN_UNLOCK_MAX_ATTEMPTS} attempts)`);
+      return callback({ ok: false });
+    }
     const ok = verifyAdminKey(payload?.key);
-    if (ok) socket.data.isAdmin = true;
+    if (ok) {
+      socket.data.isAdmin = true;
+    } else {
+      socket.data.adminUnlockAttempts = attempts + 1;
+      console.warn(`[admin] socket ${socket.id} bad key (attempt ${attempts + 1}/${ADMIN_UNLOCK_MAX_ATTEMPTS})`);
+    }
     callback({ ok });
   });
 

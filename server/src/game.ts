@@ -19,6 +19,7 @@ import type {
   SocketData,
 } from "@shared/events";
 import type { ChatMessage, Room } from "@shared/types";
+import { THUMBS_DRAWER_BONUS } from "@shared/types";
 import { getOps, resetCanvas } from "./canvas.js";
 import { getRoom } from "./rooms.js";
 import { cleanChat } from "./validate.js";
@@ -105,9 +106,28 @@ export function returnToLobby(code: string): void {
   room.maskedWord = "";
   room.timeLeft = 0;
   room.paused = false;
+  room.votes = {};
   for (const p of room.players) p.hasGuessed = false;
   resetCanvas(code);
   io.to(code).emit("canvasState", []);
+  broadcast(room);
+}
+
+/**
+ * Record a guesser's thumbs vote on the current drawer.
+ * - drawing phase only (you can't rate before/after)
+ * - guessers only (the drawer can't pad their own bonus)
+ * - one-shot: once cast this round, the vote can't be changed
+ */
+export function rateDrawing(id: string, code: string, kind: unknown): void {
+  const room = getRoom(code);
+  if (!room) return;
+  if (room.phase !== "drawing") return;
+  if (!room.drawerId || room.drawerId === id) return;
+  if (!room.players.some((p) => p.id === id)) return;
+  if (room.votes[id]) return; // first vote locks
+  if (kind !== "up" && kind !== "down") return;
+  room.votes[id] = kind;
   broadcast(room);
 }
 
@@ -282,6 +302,8 @@ function startTurnForDrawer(code: string, drawerId: string): void {
   room.phase = "choosing";
   room.maskedWord = "";
   room.timeLeft = CHOOSE_SECONDS;
+  // Wipe last turn's thumbs votes; guessers get a fresh ballot per drawer.
+  room.votes = {};
   for (const p of room.players) p.hasGuessed = false;
 
   resetCanvas(code);
@@ -334,8 +356,25 @@ function endTurn(code: string): void {
   // (total guesser points / number of potential guessers).
   const totalGuesserPoints = [...g.gained.values()].reduce((a, b) => a + b, 0);
   const potentialGuessers = room.players.filter((p) => p.id !== room.drawerId).length;
+  let drawerPoints = 0;
   if (totalGuesserPoints > 0 && room.drawerId && potentialGuessers > 0) {
-    const drawerPoints = Math.round(totalGuesserPoints / potentialGuessers);
+    drawerPoints = Math.round(totalGuesserPoints / potentialGuessers);
+  }
+
+  // Thumbs bonus: if guessers as a whole liked the drawing (ups > downs),
+  // tack on a flat THUMBS_DRAWER_BONUS. No penalty for net-negative — the user
+  // explicitly opted out of negative score adjustments.
+  if (room.drawerId) {
+    let ups = 0;
+    let downs = 0;
+    for (const v of Object.values(room.votes)) {
+      if (v === "up") ups++;
+      else if (v === "down") downs++;
+    }
+    if (ups > downs) drawerPoints += THUMBS_DRAWER_BONUS;
+  }
+
+  if (drawerPoints > 0 && room.drawerId) {
     const drawer = room.players.find((p) => p.id === room.drawerId);
     if (drawer) {
       drawer.score += drawerPoints;

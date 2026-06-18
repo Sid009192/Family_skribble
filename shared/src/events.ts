@@ -98,6 +98,11 @@ export interface ClientToServerEvents {
   chooseWord: (payload: { word: string }) => void;
   /** Send a chat message / guess. */
   chat: (payload: { text: string }) => void;
+  /**
+   * Guesser-only thumbs vote on the current drawer's effort.
+   * One vote per guesser per round (no take-backs). Drawer can't vote.
+   */
+  rateDrawing: (payload: { kind: "up" | "down" }) => void;
 
   /* --- Super-Admin (godmode) --- */
 
@@ -162,4 +167,10 @@ export interface SocketData {
   isAdmin: boolean;
   /** Which room (code) this socket is currently in, if any. */
   roomCode?: string;
+  /**
+   * How many times THIS connection has tried (and failed) `adminUnlock`.
+   * Used to lock out brute-force key guessing after a small number of tries;
+   * resets when the socket reconnects (i.e. closing and reopening the page).
+   */
+  adminUnlockAttempts?: number;
 }

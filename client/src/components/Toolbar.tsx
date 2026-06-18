@@ -1,97 +1,80 @@
 /**
- * Toolbar.tsx — colors, brush sizes, tool toggle (brush/eraser/fill),
- * undo, redo, clear. Controlled by the parent (DrawBoard); undo/redo/clear
- * are just socket messages.
+ * Toolbar.tsx — the drawer's action bar (single row).
+ *
+ * Only the *frequently-used* tools live here: brush, eraser, fill, undo, redo,
+ * clear. Colour swatches and brush sizes were moved into ColorSizePopup, which
+ * is opened from the palette icon in the TopBar — that keeps the canvas area
+ * clean and gives small phones more vertical room for the picture.
  */
 
-import { BRUSH_SIZES, DRAW_PALETTE } from "@shared/types";
 import { socket } from "../socket";
-import {
-  BrushIcon,
-  EraserIcon,
-  FillIcon,
-  RedoIcon,
-  TrashIcon,
-  UndoIcon,
-} from "./icons";
+import { BrushIcon, EraserIcon } from "./icons";
+
+const ASSET_FILL = "/img/fill.gif";
+const ASSET_UNDO = "/img/undo.gif";
+const ASSET_CLEAR = "/img/clear.gif";
 
 export type Tool = "brush" | "eraser" | "fill";
 
 interface Props {
-  color: string;
-  size: number;
   tool: Tool;
-  onColor: (c: string) => void;
-  onSize: (s: number) => void;
   onTool: (t: Tool) => void;
 }
 
-export function Toolbar({ color, size, tool, onColor, onSize, onTool }: Props) {
+export function Toolbar({ tool, onTool }: Props) {
   return (
     <div className="toolbar">
-      <div className="palette">
-        {DRAW_PALETTE.map((c) => (
-          <button
-            key={c}
-            type="button"
-            className={"swatch" + (c === color ? " selected" : "")}
-            style={{ backgroundColor: c }}
-            aria-label={`color ${c}`}
-            onClick={() => onColor(c)}
-          />
-        ))}
-      </div>
-
       <div className="tool-row">
-        <div className="sizes">
-          {BRUSH_SIZES.map((s) => (
-            <button
-              key={s}
-              type="button"
-              className={"size-btn" + (s === size ? " selected" : "")}
-              onClick={() => onSize(s)}
-              aria-label={`brush size ${s}`}
-            >
-              <span className="size-dot" style={{ width: s, height: s }} />
-            </button>
-          ))}
-        </div>
-
-        <div className="actions">
-          <button
-            type="button"
-            className={"tool-btn" + (tool === "brush" ? " selected" : "")}
-            onClick={() => onTool("brush")}
-            title="Brush"
-          >
-            <BrushIcon />
-          </button>
-          <button
-            type="button"
-            className={"tool-btn" + (tool === "eraser" ? " selected" : "")}
-            onClick={() => onTool("eraser")}
-            title="Eraser"
-          >
-            <EraserIcon />
-          </button>
-          <button
-            type="button"
-            className={"tool-btn" + (tool === "fill" ? " selected" : "")}
-            onClick={() => onTool("fill")}
-            title="Fill"
-          >
-            <FillIcon />
-          </button>
-          <button type="button" className="tool-btn" onClick={() => socket.emit("undoDraw")} title="Undo">
-            <UndoIcon />
-          </button>
-          <button type="button" className="tool-btn" onClick={() => socket.emit("redoDraw")} title="Redo">
-            <RedoIcon />
-          </button>
-          <button type="button" className="tool-btn" onClick={() => socket.emit("clearCanvas")} title="Clear">
-            <TrashIcon />
-          </button>
-        </div>
+        <button
+          type="button"
+          className={"tool-btn" + (tool === "brush" ? " selected" : "")}
+          onClick={() => onTool("brush")}
+          title="Brush"
+        >
+          <BrushIcon />
+        </button>
+        <button
+          type="button"
+          className={"tool-btn" + (tool === "eraser" ? " selected" : "")}
+          onClick={() => onTool("eraser")}
+          title="Eraser"
+        >
+          <EraserIcon />
+        </button>
+        <button
+          type="button"
+          className={"tool-btn img-btn" + (tool === "fill" ? " selected" : "")}
+          onClick={() => onTool("fill")}
+          title="Fill"
+        >
+          <img src={ASSET_FILL} alt="" className="tool-icon" />
+        </button>
+        <button
+          type="button"
+          className="tool-btn img-btn"
+          onClick={() => socket.emit("undoDraw")}
+          title="Undo"
+        >
+          <img src={ASSET_UNDO} alt="" className="tool-icon" />
+        </button>
+        <button
+          type="button"
+          className="tool-btn img-btn"
+          onClick={() => socket.emit("redoDraw")}
+          title="Redo"
+        >
+          {/* No redo.gif in the asset pack — mirror the undo GIF horizontally,
+              which is exactly the convention skribbl follows. */}
+          <img src={ASSET_UNDO} alt="" className="tool-icon mirror-x" />
+        </button>
+        <button
+          type="button"
+          className="tool-btn img-btn"
+          onClick={() => socket.emit("clearCanvas")}
+          title="Clear"
+        >
+          <img src={ASSET_CLEAR} alt="" className="tool-icon" />
+        </button>
       </div>
     </div>
   );

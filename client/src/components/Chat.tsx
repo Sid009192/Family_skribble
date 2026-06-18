@@ -16,11 +16,15 @@ import { CHAT_MAX } from "@shared/types";
 import type { ChatMessage } from "@shared/types";
 
 export function ChatMessages({ messages }: { messages: ChatMessage[] }) {
-  const topRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // Newest message at top — auto-scroll to the top so it's always in view.
+  // Newest message at top — scroll the panel itself to the top. We do NOT
+  // use scrollIntoView here: on mobile it walks up the ancestor chain and
+  // scrolls the whole page (yanking the canvas off-screen every time the
+  // user sends a guess). Scrolling the container directly keeps the page
+  // anchored where the user left it.
   useEffect(() => {
-    topRef.current?.scrollIntoView({ block: "start" });
+    if (containerRef.current) containerRef.current.scrollTop = 0;
   }, [messages]);
 
   // Reverse a copy so the freshest message renders first. We also stripe
@@ -29,8 +33,7 @@ export function ChatMessages({ messages }: { messages: ChatMessage[] }) {
   let normalIdx = 0;
 
   return (
-    <div className="chat-messages">
-      <div ref={topRef} />
+    <div className="chat-messages" ref={containerRef}>
       {reversed.map((m, i) => {
         const isNormal = m.kind === "normal";
         const odd = isNormal && normalIdx++ % 2 === 1;
@@ -65,13 +68,31 @@ export function ChatInput({
   return (
     <form className="chat-form" onSubmit={submit}>
       <input
-        type="text"
+        // type="search" (not "text"): Chrome's autofill ignores search
+        // fields, so we lose the key/card/pin chip row, but mobile
+        // keyboards still treat it as freeform text and show word
+        // predictions. CSS below hides the native clear-X button.
+        type="search"
         value={text}
         maxLength={CHAT_MAX}
         placeholder={placeholder}
         onChange={(e) => setText(e.target.value)}
+        // Mobile-keyboard tuning: we want Gboard/iOS to show normal word
+        // predictions ("he" → "hello/hey"), NOT Chrome's autofill chips
+        // (password / card / address). `autoComplete="off"` + a benign
+        // `name` stops Chrome offering autofill; Gboard's predictions are
+        // driven by inputMode/type, not autocomplete, so they still show.
+        name="chat-message"
         autoComplete="off"
+        autoCorrect="on"
+        autoCapitalize="sentences"
+        spellCheck={true}
+        inputMode="text"
+        enterKeyHint="send"
       />
+      <span className="chat-form-count" aria-hidden="true" key={text.length}>
+        {text.length}
+      </span>
     </form>
   );
 }

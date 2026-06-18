@@ -72,6 +72,7 @@ export function createRoom(
     maskedWord: "",
     timeLeft: 0,
     paused: false,
+    votes: {},
   };
   rooms.set(code, room);
   return room;

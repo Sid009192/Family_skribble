@@ -128,7 +128,16 @@ export interface Room {
   timeLeft: number;
   /** True when the Super-Admin has paused the game. */
   paused: boolean;
+  /**
+   * Thumbs votes on the *current* drawer's effort, keyed by voter socket id.
+   * Reset every turn. Guessers vote once per round; the drawer can't vote.
+   * At reveal, a flat bonus is added to the drawer if the net is positive.
+   */
+  votes: Record<string, "up" | "down">;
 }
+
+/** Flat bonus added to the drawer's score when (ups - downs) > 0 at reveal. */
+export const THUMBS_DRAWER_BONUS = 5;
 
 /** A lightweight room entry for the "rooms on your network" list. */
 export interface RoomSummary {

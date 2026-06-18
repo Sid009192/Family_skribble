@@ -50,7 +50,7 @@ export function Home({
   const longPress = useLongPress(onOpenAdmin);
   const [name, setName] = useState(saved?.name ?? "");
   const [avatar, setAvatar] = useState<AvatarType>(saved?.avatar ?? randomAvatar());
-  const [privacy, setPrivacy] = useState<"private" | "public">("private");
+  const [privacy, setPrivacy] = useState<"private" | "public">("public");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);

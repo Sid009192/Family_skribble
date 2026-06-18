@@ -1,32 +1,28 @@
 /**
- * DrawBoard.tsx — pairs the Canvas with its Toolbar and owns the tool state.
- * When `drawable` is false (you're not the drawer), the canvas is view-only and
- * the toolbar is hidden.
+ * DrawBoard.tsx — pairs the Canvas with its action Toolbar.
+ *
+ * Colour, size and tool are owned by the *parent* (Game.tsx) because the
+ * colour/size popup is opened from the TopBar palette icon, not from here.
+ * Lifting the state up means one source of truth and avoids prop drilling
+ * through a context.
  */
 
-import { useState } from "react";
-import { BRUSH_SIZES } from "@shared/types";
 import { Canvas } from "./Canvas";
 import { Toolbar, type Tool } from "./Toolbar";
 
-export function DrawBoard({ drawable = true }: { drawable?: boolean }) {
-  const [color, setColor] = useState("#000000");
-  const [size, setSize] = useState(BRUSH_SIZES[1]);
-  const [tool, setTool] = useState<Tool>("brush");
+interface Props {
+  drawable: boolean;
+  color: string;
+  size: number;
+  tool: Tool;
+  onTool: (t: Tool) => void;
+}
 
+export function DrawBoard({ drawable, color, size, tool, onTool }: Props) {
   return (
     <div className="draw-board">
       <Canvas color={color} size={size} tool={tool} drawable={drawable} />
-      {drawable && (
-        <Toolbar
-          color={color}
-          size={size}
-          tool={tool}
-          onColor={setColor}
-          onSize={setSize}
-          onTool={setTool}
-        />
-      )}
+      {drawable && <Toolbar tool={tool} onTool={onTool} />}
     </div>
   );
 }

@@ -15,8 +15,12 @@
 import { useLongPress } from "../hooks/useLongPress";
 
 interface Props {
-  /** "WAITING" in the lobby, the time remaining in the live game, etc. */
-  centerText: string;
+  /**
+   * What sits in the middle cell. Lobby passes the plain "WAITING" string;
+   * Game passes a richer block (label + masked word). Anything ReactNode-able
+   * works — we apply long-press to the whole cell so admins can still unlock.
+   */
+  center: React.ReactNode;
   /** Seconds remaining on the active turn — shown over the clock. 0 in lobby. */
   timer?: number;
   /** Current round, 1-indexed. */
@@ -28,16 +32,22 @@ interface Props {
   onLongPressCenter: () => void;
   /** Fires on cog tap (opens admin panel). */
   onCogTap: () => void;
+  /**
+   * Optional extra node placed to the LEFT of the admin cog in the right cell.
+   * Game uses this for the drawer's colour/size palette trigger.
+   */
+  rightSlot?: React.ReactNode;
 }
 
 export function TopBar({
-  centerText,
+  center,
   timer = 0,
   round,
   totalRounds,
   isAdmin,
   onLongPressCenter,
   onCogTap,
+  rightSlot,
 }: Props) {
   const longPress = useLongPress(onLongPressCenter);
   return (
@@ -53,10 +63,11 @@ export function TopBar({
       </div>
 
       <div className="topbar-center" {...longPress}>
-        {centerText}
+        {center}
       </div>
 
       <div className="topbar-right">
+        {rightSlot}
         {isAdmin && (
           <button
             type="button"

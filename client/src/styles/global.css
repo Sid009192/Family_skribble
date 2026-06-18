@@ -11,7 +11,8 @@
   --bg-2: #0e3f8a99;
   --panel: #1b58b0;
   --panel-border: #040a33;
-  --accent: #ffc532; /* skribbl yellow — highlights, timer, outlines */
+  --accent: #ffc532;
+  /* skribbl yellow — highlights, timer, outlines */
   --accent-ink: #15306a;
   --text: #ffffff;
   --muted: #b9c7e8;
@@ -61,10 +62,11 @@ h1 {
  * makes skribbl's logo feel "right" on a phone. */
 .logo-big {
   display: block;
-  margin: 6vh auto 4vh;
+  margin: 6vh auto 3vh;
   width: 95vw;
   max-width: 65vh;
-  user-select: none; /* long-press target for the admin console */
+  user-select: none;
+  /* long-press target for the admin console */
   cursor: pointer;
 }
 
@@ -83,9 +85,11 @@ button {
   font-weight: 800;
   padding: 0.85rem 1.25rem;
   border: none;
-  border-radius: 3px; /* skribbl's --BORDER_RADIUS */
+  border-radius: 3px;
+  /* skribbl's --BORDER_RADIUS */
   cursor: pointer;
-  min-height: 40px; /* still finger-friendly without being chunky */
+  min-height: 40px;
+  /* still finger-friendly without being chunky */
   color: var(--accent-ink);
   background: var(--accent);
   font-family: inherit;
@@ -188,6 +192,49 @@ button.ghost {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  animation: home-enter 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Landing entrance: opacity + slight slide-down + tiny scale, so the page
+ * settles in after the intro instead of just popping. Subtle, not bouncy —
+ * subtle is the rule for general UI; the playful curves are reserved for
+ * game-moment animations. */
+@keyframes home-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Inside the landing card we stagger the children so the logo lands first,
+ * the avatar strip follows, then the form panel — every child uses its own
+ * delay via :nth-child. Pure CSS, no JS. */
+.home>* {
+  animation: home-child 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.home>*:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.home>*:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.home>*:nth-child(3) {
+  animation-delay: 0.25s;
+}
+
+@keyframes home-child {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
 }
 
 /* Strip of sample avatars under the logo. Faces are 8vh so the row scales
@@ -198,13 +245,13 @@ button.ghost {
   gap: 0.4vh;
   flex-wrap: nowrap;
   overflow: hidden;
-  margin: 0 0 1.5vh;
-  filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.25));
+  margin: 0 0 5vh;
+  filter: brightness(1.18) saturate(1.3) drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.25));
 }
 
 .character-row .avatar {
-  width: 8vh;
-  height: 8vh;
+  width: 39px;
+  height: 39px;
 }
 
 /* Main form panel = skribbl's `.panel`. Solid darker-blue with 0.92 alpha
@@ -213,11 +260,15 @@ button.ghost {
 .landing-card {
   display: flex;
   flex-direction: column;
-  gap: 1.25vh;
-  background: rgba(8, 36, 129, 0.92);
-  padding: 1.75vh;
+  gap: 8px;
+  background: rgba(12, 44, 150, 0.75);
+  width: 100%;
+  max-width: 391.39px;
+  box-sizing: border-box;
+  padding: 16.0125px;
+  margin: 0 auto;
   border-radius: 3px;
-  border: 2px solid var(--panel-border);
+  border: 2px solid #0a184f;
 }
 
 /* Name input + privacy slider share one row, like skribbl's name + language.
@@ -270,7 +321,7 @@ button.ghost {
   font-size: 1.2em;
   font-weight: 700;
   padding: 0;
-  margin-top: 1.25vh;
+  margin-top: 3 px;
   min-height: 0;
 }
 
@@ -370,9 +421,11 @@ button.ghost {
   opacity: 0.55;
   pointer-events: none;
 }
+
 .ps-left {
   left: 0;
 }
+
 .ps-right {
   right: 0;
 }
@@ -406,7 +459,8 @@ button.ghost {
 
 .privacy-slider.public .ps-thumb {
   left: 50%;
-  background-color: #ee9631; /* skribbl's --COLOR_PANEL_FOCUS */
+  background-color: #ee9631;
+  /* skribbl's --COLOR_PANEL_FOCUS */
 }
 
 .privacy-slider:hover .ps-thumb {
@@ -444,8 +498,12 @@ button.ghost {
   justify-content: center;
   gap: 1vh;
   background: rgba(0, 0, 0, 0.1);
-  padding: 1.25vh;
-  margin: 1.25vh 0;
+  width: 100%;
+  max-width: 359.39px;
+  box-sizing: border-box;
+  height: 160.13px;
+  padding: 11.4375px;
+  margin: 0 0 11.4375px 0;
   border-radius: 3px;
 }
 
@@ -453,12 +511,15 @@ button.ghost {
 .avatar-customizer .avatar {
   width: 15vh;
   height: 15vh;
+  filter: brightness(3.18) saturate(1.3) drop-shadow(4px 4px 0 rgba(0, 0, 0, 0.25));
 }
 
 .avatar-customizer .arrows {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+  filter: brightness(1.18) saturate(1.3) drop-shadow(4px 4px 0 rgba(0, 0, 0, 0.25));
+
 }
 
 /* The arrow GIF is a 2×2 sprite: cols = left/right, rows = normal/hover. */
@@ -473,19 +534,22 @@ button.ghost {
   min-height: 0;
   padding: 0;
   border: none;
-  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.15));
+  filter: brightness(1.15) saturate(1.3) drop-shadow(0 0 3px rgba(0, 0, 0, 0.15));
   transition: transform 0.08s ease;
 }
 
 .avatar-customizer .arrows.left .arrow {
   background-position: 0 0;
 }
+
 .avatar-customizer .arrows.left .arrow:hover {
   background-position: 100% 0;
 }
+
 .avatar-customizer .arrows.right .arrow {
   background-position: 0 100%;
 }
+
 .avatar-customizer .arrows.right .arrow:hover {
   background-position: 100% 100%;
 }
@@ -510,6 +574,7 @@ button.ghost {
   background-position: center;
   border: none;
   opacity: 0.6;
+  filter: brightness(1.15) saturate(1.3);
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
@@ -534,10 +599,13 @@ button.ghost {
  * children; each child carries its own background. */
 .lobby {
   font-size: 1.65vh;
+  /* Min full-viewport on phones; cap at 1120px so TopBar + content sit in a
+   * column on tablet/PC instead of stretching across a 4K monitor. Same cap
+   * is applied to .game so the TopBar width is constant across both screens. */
   width: 100%;
-  max-width: none;
+  max-width: 1120px;
   min-height: 100vh;
-  margin: 0;
+  margin: 0 auto;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -548,6 +616,23 @@ button.ghost {
   flex-direction: column;
   border: none;
   border-radius: 0;
+  /* Upper section drops in with a real bounce — overshoot cubic-bezier so it
+   * settles like a stamp (this is the "playful for game events" half of the
+   * rule; entering the lobby IS a moment). */
+  animation: lobby-top-drop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: 50% 0;
+}
+
+@keyframes lobby-top-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-60px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Top bar: clock+timer (left) | WAITING (centre) | cog (right). White strip
@@ -557,7 +642,7 @@ button.ghost {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 0.4rem;
-  padding: 4px 8px;
+  padding: 2px 8px;
   background: #ffffff;
   color: #1d2a4a;
 }
@@ -572,8 +657,8 @@ button.ghost {
 /* Clock icon + tiny black timer number overlaid on the dial. */
 .topbar-clock-wrap {
   position: relative;
-  width: 3.6vh;
-  height: 3.6vh;
+  width: 3.0vh;
+  height: 3.0vh;
 }
 
 .topbar-clock {
@@ -585,10 +670,12 @@ button.ghost {
 
 .topbar-timer {
   position: absolute;
-  inset: 32% 0 0 0;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   text-align: center;
   font-weight: 800;
-  font-size: 0.85em;
+  font-size: 0.6em;
   color: #111;
   letter-spacing: 0;
   pointer-events: none;
@@ -596,7 +683,7 @@ button.ghost {
 }
 
 .topbar-round {
-  font-size: 0.62em;
+  font-size: 0.54em;
   font-weight: 800;
   color: #1d2a4a;
   margin-top: 1px;
@@ -605,7 +692,7 @@ button.ghost {
 /* WAITING is lighter + smaller — closer to skribbl's understated header. */
 .topbar-center {
   font-weight: 700;
-  font-size: 0.95em;
+  font-size: 0.78em;
   letter-spacing: 0.22em;
   text-align: center;
   user-select: none;
@@ -613,14 +700,63 @@ button.ghost {
   color: #444;
 }
 
+/* Word block: label (GUESS THIS) above + bold masked word below */
+.topbar-word {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+  gap: 1px;
+}
+
+.topbar-word-label {
+  font-size: 0.6em;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.topbar-word-value {
+  font-size: 1.1em;
+  font-weight: 200;
+  letter-spacing: 0em;
+  color: #000000;
+  position: relative;
+  text-shadow: 0.5px 0.5px 0.1px #414040;
+}
+
 .topbar-right {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Drawer's colour-picker trigger — a tiny chip mirroring skribbl's swatch.
+ * Uses the --swatch CSS var (set inline from the active drawing colour) so the
+ * chip always reflects the current pick at a glance. */
+.topbar-palette {
+  width: 3.0vh;
+  height: 3.0vh;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  background: var(--swatch, #000);
+  border: 2px solid #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+.topbar-palette:hover {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .topbar-cog {
-  width: 3.6vh;
-  height: 3.6vh;
+  width: 3.0vh;
+  height: 3.0vh;
   min-width: 0;
   min-height: 0;
   padding: 0;
@@ -699,7 +835,8 @@ button.ghost {
   background: #f3f3f3;
   color: #444;
   cursor: not-allowed;
-  opacity: 1; /* override the global button:disabled rule */
+  opacity: 1;
+  /* override the global button:disabled rule */
 }
 
 .custom-words:disabled {
@@ -837,6 +974,22 @@ button.ghost {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
   min-height: 26vh;
+  /* Lower section swoops UP from below, delayed slightly so it follows the
+   * top stamp landing. ease-out (no overshoot) keeps it calmer than the top
+   * — subtle is the rule, the top already had its bounce. */
+  animation: lobby-bottom-swoop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.18s both;
+}
+
+@keyframes lobby-bottom-swoop {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Left pane: doodle bg shows through, rows are compact white tiles. */
@@ -1006,6 +1159,7 @@ button.ghost {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  margin-top: 3px;
 }
 
 .draw-canvas {
@@ -1013,8 +1167,10 @@ button.ghost {
   height: auto;
   aspect-ratio: 4 / 3;
   background: #fff;
-  border-radius: 12px;
-  border: 2px solid #ffffff22;
+  /* Edge-to-edge: no rounded corners or side border so the canvas meets the
+   * viewport edges. */
+  border-radius: 0;
+  border: none;
   /* Stop the page from scrolling/zooming while drawing on touch screens. */
   touch-action: none;
   cursor: crosshair;
@@ -1050,7 +1206,9 @@ button.ghost {
 
 .tool-row {
   display: flex;
-  justify-content: space-between;
+  /* Single-row toolbar — centre the six action buttons so they don't drift
+   * to the edges on wider screens. */
+  justify-content: center;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
@@ -1087,7 +1245,8 @@ button.ghost {
 
 .tool-btn {
   background: var(--panel);
-  color: var(--text); /* SVG icons use currentColor, so this makes them visible */
+  color: var(--text);
+  /* SVG icons use currentColor, so this makes them visible */
   min-height: 44px;
   min-width: 44px;
   padding: 0;
@@ -1098,7 +1257,95 @@ button.ghost {
 
 .tool-btn.selected {
   background: var(--accent);
-  color: var(--accent-ink); /* dark icon on the bright selected button */
+  color: var(--accent-ink);
+  /* dark icon on the bright selected button */
+}
+
+/* --- Thumbs bar (guesser-only, floats over top-right of canvas) ---------- */
+
+.thumbs-bar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+  z-index: 20;
+}
+
+.thumb-btn {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+  transition: transform 0.1s ease;
+}
+
+.thumb-btn:hover {
+  transform: scale(1.08);
+}
+
+.thumb-btn img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+/* --- Colour/size picker popup (drawer only) ------------------------------ */
+
+.picker-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(31, 42, 68, 0.78);
+  display: grid;
+  place-items: center;
+  padding: 0.75rem;
+  z-index: 40;
+}
+
+.picker-panel {
+  position: relative;
+  background: var(--bg-2);
+  border-radius: 12px;
+  padding: 2rem 0.75rem 0.7rem;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+}
+
+.picker-close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.picker-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Centre the sizes row inside the picker (the toolbar override above pushes
+ * a stretched layout otherwise). */
+.picker-panel .sizes {
+  justify-content: center;
 }
 
 /* --- Modal popup --------------------------------------------------------- */
@@ -1111,7 +1358,9 @@ button.ghost {
   place-items: center;
   padding: 1.5rem;
   z-index: 100;
-  animation: fade-in 0.15s ease-out;
+  /* Backdrop fades in smoothly; matches skribbl's `frames_modal_opacity`
+   * (.21s ease-in-out). */
+  animation: overlay-fade 0.22s ease-out;
 }
 
 .modal-card {
@@ -1125,7 +1374,10 @@ button.ghost {
   flex-direction: column;
   gap: 1rem;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
-  animation: pop-in 0.18s ease-out;
+  /* Modal card swoops down from above (skribbl `frames_modal_position` plays
+   * the same trick: starts at top:-21%, settles at 0). The cubic-bezier
+   * overshoots slightly so the landing feels alive, not stiff. */
+  animation: modal-swoop 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.15);
 }
 
 .modal-title {
@@ -1152,6 +1404,27 @@ button.ghost {
   }
 }
 
+@keyframes overlay-fade {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+}
+
+/* Swoop = slide down from above + fade. The slight overshoot in the easing
+ * gives a soft landing without being cartoony. */
+@keyframes modal-swoop {
+  from {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* Non-host read-only summary (the panel itself is styled in the lobby block). */
 .settings-panel.readonly {
   display: flex;
@@ -1164,66 +1437,110 @@ button.ghost {
 /* --- Game screen --------------------------------------------------------- */
 
 .game {
-  max-width: 560px;
+  /* Match Lobby: full-width on phones, capped at 1120px on tablet/PC, and the
+   * same 1.65vh font-size base so TopBar text/icons stay in proportion across
+   * both screens. */
+  font-size: 1.65vh;
+  width: 100%;
+  max-width: 1120px;
+  min-height: 100vh;
   margin: 0 auto;
-  padding: 0.75rem 0.9rem 2rem;
+  /* Edge-to-edge: no padding so the canvas/chat panes reach the viewport edges. */
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0;
 }
 
-.game-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+/* Fill all space below the canvas stack so the chat column runs to the bottom. */
+.game .players-chat-split {
+  flex: 1 1 auto;
+  min-height: 0;
+  column-gap: 2px;
 }
 
-.wordmark {
-  font-weight: 800;
-  color: var(--accent);
-  /* long-press target — disable text selection so holding doesn't select it */
-  user-select: none;
-  cursor: pointer;
+.game .players-pane {
+  padding: 4px 0;
+  font-size: 0.82em;
 }
 
-.game-header .round {
-  color: var(--muted);
-  font-size: 0.9rem;
+.game .rank-chip {
+  font-size: 0.72em;
 }
 
-.game-header .timer {
-  font-weight: 800;
-  font-size: 1.3rem;
-  min-width: 2ch;
-  text-align: center;
+.game .player-name {
+  font-size: 0.82em;
 }
 
-.game-header .timer.low {
-  color: var(--danger);
+.game .player-points {
+  font-size: 0.85em;
 }
 
-.word-slot {
-  text-align: center;
-  letter-spacing: 0.15em;
-  font-size: 1.4rem;
-  font-weight: 700;
-  min-height: 1.6em;
+/* Player row height ~41px to match target dimensions */
+.game .player-row {
+  padding: 4px 5px;
 }
 
-.word-slot .masked.dim {
-  color: var(--muted);
+.game .avatar-cell {
+  width: 36px;
+  height: 36px;
 }
 
-.canvas-area {
+
+.game .chat-pane {
+  /* Inset from the guess input — top aligns with the first player row. */
+  margin-top: 4px;
+  height: calc(100% - 4px);
+  min-height: 0;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+
+/* Compact chat text to match skribbl-style sizing */
+.game .chat-messages {
+  font-size: 0.72em;
+}
+
+.game .chat-msg {
+  padding: 0.18rem 0.45rem;
+}
+
+/* Positioning context for .canvas-overlay so it pins to the canvas only,
+ * not the whole viewport. (Without this the overlay escapes up to <body>.) */
+.game-canvas-wrap {
   position: relative;
+}
+
+/* Guess input — full width, no boxed border, small gap below the canvas. */
+.game-chat-input-wrap {
+  background: transparent;
+  padding: 0;
+  margin-top: 4px;
+}
+
+.game-chat-input-wrap .chat-form input {
+  width: 100%;
+  text-align: center;
+  border-radius: 0;
+  border: none;
+  min-height: 3.4vh;
+  font-size: 0.85em;
+  color: #888;
+  background: #ffffff;
+  padding: 0.4rem 0.7rem;
+}
+
+.game-chat-input-wrap .chat-form input:focus {
+  outline: none;
+  color: #111;
 }
 
 .canvas-overlay {
   position: absolute;
   inset: 0;
   background: rgba(31, 42, 68, 0.82);
-  border-radius: 12px;
+  /* Edge-to-edge: matches the canvas underneath (no rounded corners). */
+  border-radius: 0;
   display: grid;
   place-items: center;
   text-align: center;
@@ -1242,53 +1559,447 @@ button.ghost {
 .word-choices {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.4rem;
   justify-content: center;
 }
 
+/* Outlined word-choice buttons — compact, bordered, no fill (image 2 style) */
 .word-choices .primary {
   width: auto;
+  background: transparent;
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.82em;
+  font-weight: 600;
+  min-height: 0;
+  border-radius: 3px;
+  letter-spacing: 0.01em;
 }
 
+.word-choices .primary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #ffffff;
+}
+
+/* Legacy — kept in case referenced elsewhere */
 .reveal-word {
   margin: 0;
   color: var(--accent);
   font-size: 1.8rem;
 }
 
-.reveal-gains,
-.final-ranking {
-  list-style: none;
+/* "Choose a word" overlay headline — same scale as the reveal heading. */
+.choose-word-headline {
   margin: 0;
+  font-size: 1.5em;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  text-align: center;
+}
+
+/* Image-2 reveal layout */
+.reveal-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  align-items: center;
+}
+
+.reveal-headline {
+  margin: 0;
+  font-size: 1em;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+}
+
+.reveal-word-inline {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.reveal-subtitle {
+  margin: 0;
+  font-size: 0.75em;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
+.reveal-gains {
+  list-style: none;
+  margin: 0.45rem 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.05rem;
+  width: 100%;
+  min-width: 150px;
 }
 
-.final-ranking {
-  counter-reset: rank;
-}
-
-.final-ranking li {
+.reveal-gains li {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   gap: 1.5rem;
-  min-width: 200px;
 }
 
-.final-ranking li::before {
-  counter-increment: rank;
-  content: counter(rank) ".";
-  color: var(--muted);
+.reveal-name {
+  font-size: 0.82em;
+  color: #ffffff;
+  font-weight: 500;
 }
 
-.gameover-buttons {
+.reveal-pts {
+  font-size: 0.82em;
+  font-weight: 800;
+  color: #00ff0eff;
+  min-width: 3ch;
+  text-align: right;
+}
+
+.reveal-pts-zero {
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 400;
+}
+
+/* --- Game-over podium ---------------------------------------------------
+ * The whole panel lives inside .canvas-overlay (absolute-positioned inside
+ * .game-canvas-wrap). We let the content sit centered while the host's
+ * action buttons hug the bottom edge of the overlay so they're always
+ * reachable on mobile without scrolling.
+ */
+.gameover {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.3rem;
   width: 100%;
 }
+
+.gameover-headline {
+  margin: 0;
+  font-size: 0.95em;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.gameover-winner-name {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.gameover-podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  margin-top: 0.1rem;
+}
+
+.podium-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Fixed width so the block stays the same size whether there are 1, 2,
+   * or 3 podium slots. Previously `flex: 1 1 0; max-width: 32%` caused a
+   * lone slot to shrink to 32% of the panel. */
+  flex: 0 0 64px;
+  width: 64px;
+}
+
+.podium-figure {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 70px;
+}
+
+.podium-rank-1 .podium-figure {
+  height: 86px;
+}
+
+/* Winner stack — trophy (still) behind, then a dancer wrapper that holds the
+ * crown + avatar so the two wobble as one unit, keeping the crown stuck on
+ * the avatar's head while it dances. */
+.podium-winner {
+  position: relative;
+  width: 52px;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.podium-trophy {
+  position: absolute;
+  /* Trophy is wider/taller than the avatar so it peeks out behind it; sits
+   * a few px below the avatar so the cup's bowl tucks under the figure's
+   * "hands". Offset right to show ~3/4 of the trophy. */
+  width: 62px;
+  height: 62px;
+  bottom: -4px;
+  left: 20px;
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.podium-winner-dancer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: podium-wobble 1.2s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+.podium-crown {
+  width: 22px;
+  height: 22px;
+  image-rendering: pixelated;
+  pointer-events: none;
+  /* Negative bottom margin pulls it down onto the avatar's head.
+   * Right margin pushes it towards the left. */
+  margin-bottom: -15px;
+  margin-right: 30px;
+  transform: rotate(-5deg);
+  z-index: 2;
+}
+
+@keyframes podium-wobble {
+
+  0%,
+  100% {
+    transform: translateX(-3px) rotate(-3deg);
+  }
+
+  50% {
+    transform: translateX(3px) rotate(3deg);
+  }
+}
+
+/* Respect reduced-motion users — no animation if they've asked for it. */
+@media (prefers-reduced-motion: reduce) {
+  .podium-winner-dancer {
+    animation: none;
+  }
+}
+
+/* --- Game-over entrance animations -------------------------------------- *
+ * The podium plays a staggered "podium reveal":
+ *   • headline fades down from above (0.0s)
+ *   • #3 rises from the floor (0.3s)
+ *   • #2 rises (0.6s)
+ *   • #1 rises (0.9s)
+ *   • trophy + crown drop in on the winner (1.3s)
+ *   • #4+ row fades in last (1.6s)
+ *
+ * Each piece animates in with a `forwards` fill so it settles at the final
+ * position (without that, it'd snap back to the from-state after the keyframe
+ * ends). We give the podium parts a longer fill-mode anchor so the layout
+ * doesn't jump at t=0 before the animation starts.
+ * ----------------------------------------------------------------------- */
+
+.gameover-headline {
+  animation: gameover-headline-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.gameover-podium .podium-slot {
+  /* Start hidden so we don't get a flash before the keyframe takes hold. */
+  opacity: 0;
+  animation: podium-rise 0.55s cubic-bezier(0.18, 0.9, 0.32, 1.1) forwards;
+}
+
+/* Order: 3 first, then 2, then 1 (1 is the climax, so it lands last). */
+.gameover-podium .podium-rank-3 { animation-delay: 0.3s; }
+.gameover-podium .podium-rank-2 { animation-delay: 0.6s; }
+.gameover-podium .podium-rank-1 { animation-delay: 0.9s; }
+
+/* Trophy and crown drop down onto #1 after #1 itself has risen. */
+.podium-trophy {
+  animation: podium-trophy-drop 0.5s cubic-bezier(0.18, 0.9, 0.32, 1.3) 1.3s both;
+}
+.podium-crown {
+  animation: podium-crown-drop 0.45s cubic-bezier(0.18, 0.9, 0.32, 1.3) 1.5s both;
+}
+
+/* #4-and-below row fades in once the podium has fully landed. */
+.gameover-others {
+  animation: gameover-others-in 0.5s ease-out 1.6s both;
+}
+
+@keyframes gameover-headline-in {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes podium-rise {
+  from { opacity: 0; transform: translateY(80px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes podium-trophy-drop {
+  /* Drop from above the avatar; the bounce is shaped by the cubic-bezier. */
+  from { opacity: 0; transform: translateY(-40px) scale(0.7); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes podium-crown-drop {
+  /* Crown keeps its final -5deg tilt; we just animate the entry. */
+  from { opacity: 0; transform: translateY(-30px) rotate(-5deg) scale(0.6); }
+  to   { opacity: 1; transform: translateY(0) rotate(-5deg) scale(1); }
+}
+
+@keyframes gameover-others-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Reduced-motion users get the layout instantly — no entrance choreography. */
+@media (prefers-reduced-motion: reduce) {
+  .gameover-headline,
+  .gameover-podium .podium-slot,
+  .podium-trophy,
+  .podium-crown,
+  .gameover-others {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- Empty podium slot (e.g. #3 in a 2-player game) --------------------- *
+ * Dashed outline + muted colour so it reads as a placeholder. We keep the
+ * same dimensions as a populated slot so the podium silhouette is preserved.
+ * ----------------------------------------------------------------------- */
+.podium-slot-empty {
+  opacity: 0.55;
+}
+
+.podium-block-empty {
+  border-style: dashed !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.podium-block {
+  margin-top: 0.15rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Text anchored to the TOP of the block so taller (#1) blocks visibly
+   * push their label above shorter (#2/#3) labels — the height differential
+   * becomes legible at a glance. */
+  justify-content: flex-start;
+  padding: 0.25rem 0.2rem 0;
+  border: 2px solid transparent;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  border-bottom: none;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1.15;
+}
+
+/* Heights differ to imply rank, and colours echo gold/silver/bronze. */
+.podium-rank-1 .podium-block {
+  height: 64px;
+  border-color: #ffb84a;
+  color: #ffb84a;
+}
+
+.podium-rank-2 .podium-block {
+  height: 48px;
+  border-color: #c7cdd6;
+  color: #c7cdd6;
+}
+
+.podium-rank-3 .podium-block {
+  height: 36px;
+  border-color: #d68a4a;
+  color: #d68a4a;
+}
+
+.podium-rank {
+  font-size: 0.62em;
+  font-weight: 700;
+  align-self: flex-start;
+  margin-left: 0.15rem;
+  opacity: 0.9;
+  line-height: 1;
+}
+
+.podium-name {
+  font-size: 0.72em;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.05;
+}
+
+.podium-points {
+  font-size: 0.6em;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.1;
+}
+
+/* Lower-ranked players (#4+) — horizontal row of avatar cards. */
+.gameover-others {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem 0.45rem;
+  margin-top: 0.15rem;
+  width: 100%;
+}
+
+.gameover-other {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 46px;
+  position: relative;
+}
+
+.gameover-other-rank {
+  font-size: 0.6em;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 0.1rem;
+  line-height: 1;
+}
+
+.gameover-other-name {
+  font-size: 0.66em;
+  font-weight: 600;
+  color: #ffffff;
+  margin-top: 0.1rem;
+  max-width: 62px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.05;
+}
+
+.gameover-other-points {
+  font-size: 0.58em;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.1;
+}
+
 
 /* --- Scoreboard ---------------------------------------------------------- */
 
@@ -1362,7 +2073,8 @@ button.ghost {
 }
 
 .chat-msg.odd {
-  background: #f0f0f0; /* skribbl's alternating row tint */
+  background: #f0f0f0;
+  /* skribbl's alternating row tint */
 }
 
 .chat-msg b {
@@ -1396,10 +2108,134 @@ button.ghost {
   font-style: italic;
 }
 
+/* --- Floating chat toasts (bottom-right of canvas) ---------------------- *
+ * Skribbl-style: the latest 1–2 messages float over the draw area as bubbles,
+ * slide in from the right, then slide back out a few seconds later. Lives on
+ * top of the canvas via absolute positioning inside .game-canvas-wrap.
+ * ----------------------------------------------------------------------- */
+.chat-toasts {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  /* Cap width so a long message wraps instead of stretching across the canvas.
+   * On narrower phone canvases we let it shrink further. */
+  max-width: min(60%, 320px);
+  /* Sit above the draw layer but below any modal/overlay. */
+  z-index: 5;
+  /* Don't block taps on the canvas — clicks pass through the toast container. */
+  pointer-events: none;
+}
+
+.chat-toast {
+  /* Match skribbl: rounded pill, soft shadow, semi-opaque so the drawing
+   * faintly shows through. Word-wrap so long messages don't overflow. */
+  background: rgba(245, 247, 250, 0.92);
+  color: #222;
+  border-radius: 14px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.85rem;
+  line-height: 1.25;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  word-break: break-word;
+  /* Slide-in from the right. `both` keeps the final state once the keyframe
+   * ends — without it the toast would snap back to translateX(100%). */
+  animation: chat-toast-in 0.22s ease-out both;
+}
+
+.chat-toast-leaving {
+  /* Override the in-animation with the out-animation. */
+  animation: chat-toast-out 0.3s ease-in forwards;
+}
+
+.chat-toast-name {
+  font-weight: 700;
+  color: #444;
+}
+
+/* Per-kind tinting — same vibe as the side panel but transparent. */
+.chat-toast-correct {
+  background: rgba(200, 245, 182, 0.95);
+  color: #1d6b1d;
+  font-weight: 800;
+}
+.chat-toast-correct .chat-toast-name { color: #155515; }
+
+.chat-toast-close {
+  background: rgba(255, 243, 194, 0.95);
+  color: #7a5300;
+}
+.chat-toast-close .chat-toast-name { color: #5a3d00; }
+
+.chat-toast-system {
+  background: rgba(255, 255, 255, 0.95);
+  color: #ee9631;
+  font-style: italic;
+  font-weight: 800;
+}
+
+.chat-toast-insider {
+  background: rgba(232, 238, 249, 0.95);
+  color: #455;
+  font-style: italic;
+}
+.chat-toast-insider .chat-toast-name { color: #2c3a52; }
+
+@keyframes chat-toast-in {
+  from { opacity: 0; transform: translateX(110%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes chat-toast-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(110%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-toast,
+  .chat-toast-leaving {
+    animation: none;
+  }
+}
+
 /* No more Send button — Enter submits. The input fills its row. */
 .chat-form {
   display: block;
   width: 100%;
+  position: relative;
+}
+
+/* Live char counter pinned to the right edge of the input, vertically
+ * centered. pointer-events:none so taps still hit the input underneath. */
+@keyframes pop-count {
+  0% {
+    transform: translateY(-50%) scale(1);
+  }
+
+  50% {
+    transform: translateY(-50%) scale(1.4);
+    color: var(--accent);
+  }
+
+  100% {
+    transform: translateY(-50%) scale(1);
+  }
+}
+
+.chat-form-count {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.7em;
+  font-weight: 800;
+  color: #000000;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+  animation: pop-count 0.15s ease-out;
 }
 
 .chat-form input {
@@ -1417,6 +2253,14 @@ button.ghost {
 .chat-form input:focus {
   outline: none;
   border-color: #56b2fd;
+}
+
+/* Hide the native clear-X that browsers add to type="search" — the input
+   is `search` only to dodge Chrome autofill, we don't want the UI to change. */
+.chat-form input[type="search"]::-webkit-search-cancel-button,
+.chat-form input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .leave-btn {
@@ -1535,13 +2379,20 @@ button.ghost {
   gap: 0.9rem;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
   border: 2px solid var(--panel-border);
-  animation: join-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1.2);
+  animation: join-pop 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.15);
 }
 
+/* Join modal also swoops down from above — same direction as other modals
+ * so the popup vocabulary is consistent across the app. */
 @keyframes join-pop {
   from {
     opacity: 0;
-    transform: translateY(14px) scale(0.96);
+    transform: translateY(-40px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -1686,10 +2537,12 @@ button.ghost {
 }
 
 @keyframes intro-float {
+
   0%,
   100% {
     transform: translateY(0) rotate(-0.5deg);
   }
+
   50% {
     transform: translateY(-10px) rotate(0.5deg);
   }

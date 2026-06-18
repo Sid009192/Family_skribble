@@ -47,7 +47,7 @@ export function Lobby({ api, meId, onOpenAdmin }: Props) {
     <main className="lobby">
       <div className="lobby-stack">
         <TopBar
-          centerText="WAITING"
+          center="WAITING"
           timer={0}
           round={room.round || 1}
           totalRounds={room.settings.rounds}

@@ -41,6 +41,22 @@ export function deleteCanvas(code: string): void {
   redoStacks.delete(code);
 }
 
+export function reassignCanvasAuthor(code: string, oldAuthor: string, newAuthor: string): void {
+  const ops = canvases.get(code);
+  if (ops) {
+    for (const op of ops) {
+      if (op.author === oldAuthor) op.author = newAuthor;
+    }
+  }
+
+  const stack = redoStacks.get(code);
+  if (stack) {
+    for (const op of stack) {
+      if (op.author === oldAuthor) op.author = newAuthor;
+    }
+  }
+}
+
 function ensure(code: string): DrawOp[] {
   let ops = canvases.get(code);
   if (!ops) {
@@ -153,7 +169,12 @@ export function undoLast(code: string, author: string): boolean {
       return true;
     }
   }
-  return false;
+  const removed = ops.pop();
+  if (!removed) return false;
+  const stack = redoStacks.get(code) ?? [];
+  stack.push(removed);
+  redoStacks.set(code, stack);
+  return true;
 }
 
 /** Redo the requester's most recently undone op (puts it back on top). */
@@ -167,5 +188,8 @@ export function redoLast(code: string, author: string): boolean {
       return true;
     }
   }
-  return false;
+  const restored = stack.pop();
+  if (!restored) return false;
+  appendOp(code, restored);
+  return true;
 }

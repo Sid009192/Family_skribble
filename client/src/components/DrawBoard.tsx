@@ -7,7 +7,8 @@
  * through a context.
  */
 
-import { Canvas } from "./Canvas";
+import { useRef } from "react";
+import { Canvas, type CanvasActions } from "./Canvas";
 import { Toolbar, type Tool } from "./Toolbar";
 
 interface Props {
@@ -19,10 +20,27 @@ interface Props {
 }
 
 export function DrawBoard({ drawable, color, size, tool, onTool }: Props) {
+  const canvasActions = useRef<CanvasActions | null>(null);
+
   return (
     <div className="draw-board">
-      <Canvas color={color} size={size} tool={tool} drawable={drawable} />
-      {drawable && <Toolbar tool={tool} onTool={onTool} />}
+      <Canvas
+        color={color}
+        size={size}
+        tool={tool}
+        drawable={drawable}
+        actionsRef={canvasActions}
+      />
+      {drawable && (
+        <Toolbar
+          tool={tool}
+          color={color}
+          onTool={onTool}
+          onUndo={() => canvasActions.current?.undo()}
+          onRedo={() => canvasActions.current?.redo()}
+          onClear={() => canvasActions.current?.clear()}
+        />
+      )}
     </div>
   );
 }

@@ -21,15 +21,22 @@ import type { DrawOp, Point, Segment } from "@shared/types";
 import { socket } from "../socket";
 import type { Tool } from "./Toolbar";
 
+export interface CanvasActions {
+  undo: () => void;
+  redo: () => void;
+  clear: () => void;
+}
+
 interface Props {
   color: string;
   size: number;
   tool: Tool;
   /** When false, this device can only VIEW (e.g. you're not the drawer). */
   drawable?: boolean;
+  actionsRef?: React.MutableRefObject<CanvasActions | null>;
 }
 
-export function Canvas({ color, size, tool, drawable = true }: Props) {
+export function Canvas({ color, size, tool, drawable = true, actionsRef }: Props) {
   // The eraser is just a white brush (our canvas background is white). All the
   // brush/segment code below uses this color so erasing syncs like any stroke.
   const drawColor = tool === "eraser" ? "#ffffff" : color;
@@ -38,6 +45,36 @@ export function Canvas({ color, size, tool, drawable = true }: Props) {
   const drawingRef = useRef(false);
   const lastRef = useRef<Point | null>(null);
   const strokeRef = useRef<Point[]>([]);
+  const localOpsRef = useRef<DrawOp[]>([]);
+  const localRedoRef = useRef<DrawOp[]>([]);
+
+  useEffect(() => {
+    if (!actionsRef) return;
+    actionsRef.current = {
+      undo: () => {
+        endStroke();
+        undoLocal();
+        socket.emit("undoDraw");
+      },
+      redo: () => {
+        endStroke();
+        redoLocal();
+        socket.emit("redoDraw");
+      },
+      clear: () => {
+        endStroke();
+        const ctx = canvasRef.current?.getContext("2d");
+        if (ctx) paintBackground(ctx);
+        localOpsRef.current = [];
+        localRedoRef.current = [];
+        socket.emit("clearCanvas");
+      },
+    };
+
+    return () => {
+      actionsRef.current = null;
+    };
+  });
 
   // --- Set up the canvas + server listeners once on mount ----------------
   useEffect(() => {
@@ -45,9 +82,17 @@ export function Canvas({ color, size, tool, drawable = true }: Props) {
     if (!ctx) return;
     paintBackground(ctx);
 
-    const onCanvasState = (ops: DrawOp[]) => redrawAll(ctx, ops);
+    const onCanvasState = (ops: DrawOp[]) => {
+      localOpsRef.current = [...ops];
+      localRedoRef.current = [];
+      redrawAll(ctx, ops);
+    };
     const onLiveSegment = (seg: Segment) => drawSegment(ctx, seg);
-    const onOpCommitted = (op: DrawOp) => applyOp(ctx, op);
+    const onOpCommitted = (op: DrawOp) => {
+      localOpsRef.current = [...localOpsRef.current, op];
+      localRedoRef.current = [];
+      applyOp(ctx, op);
+    };
 
     socket.on("canvasState", onCanvasState);
     socket.on("liveSegment", onLiveSegment);
@@ -82,6 +127,11 @@ export function Canvas({ color, size, tool, drawable = true }: Props) {
 
     if (tool === "fill") {
       socket.emit("fillCanvas", { x: pt.x, y: pt.y, color });
+      localOpsRef.current = [
+        ...localOpsRef.current,
+        { type: "fill", x: pt.x, y: pt.y, color, author: "__local__" },
+      ];
+      localRedoRef.current = [];
       floodFill(ctx, pt.x, pt.y, color); // optimistic local fill
       return;
     }
@@ -118,8 +168,31 @@ export function Canvas({ color, size, tool, drawable = true }: Props) {
     strokeRef.current = [];
     lastRef.current = null;
     if (points.length > 0) {
+      localOpsRef.current = [
+        ...localOpsRef.current,
+        { type: "stroke", points, color: drawColor, size, author: "__local__" },
+      ];
+      localRedoRef.current = [];
       socket.emit("commitStroke", { points, color: drawColor, size });
     }
+  }
+
+  function undoLocal() {
+    const op = localOpsRef.current.at(-1);
+    if (!op) return;
+    localOpsRef.current = localOpsRef.current.slice(0, -1);
+    localRedoRef.current = [...localRedoRef.current, op];
+    const ctx = canvasRef.current?.getContext("2d");
+    if (ctx) redrawAll(ctx, localOpsRef.current);
+  }
+
+  function redoLocal() {
+    const op = localRedoRef.current.at(-1);
+    if (!op) return;
+    localRedoRef.current = localRedoRef.current.slice(0, -1);
+    localOpsRef.current = [...localOpsRef.current, op];
+    const ctx = canvasRef.current?.getContext("2d");
+    if (ctx) redrawAll(ctx, localOpsRef.current);
   }
 
   return (

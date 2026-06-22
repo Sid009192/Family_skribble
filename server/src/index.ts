@@ -52,6 +52,7 @@ import {
   deleteCanvas,
   getOps,
   redoLast,
+  reassignCanvasAuthor,
   resetCanvas,
   sanitizeSegment,
   undoLast,
@@ -199,6 +200,7 @@ io.on("connection", (socket) => {
         const oldId = session.socketId;
         const updatedRoom = reconnectPlayer(session.roomCode, oldId, socket.id);
         if (updatedRoom) {
+          reassignCanvasAuthor(session.roomCode, oldId, socket.id);
           saveSession(authToken, socket.id, session.roomCode, session.name, session.avatar);
           socket.data.roomCode = session.roomCode;
           socket.join(session.roomCode);

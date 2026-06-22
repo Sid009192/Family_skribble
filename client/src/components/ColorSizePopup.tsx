@@ -70,7 +70,10 @@ export function ColorSizePopup({
               }}
               aria-label={`brush size ${s}`}
             >
-              <span className="size-dot" style={{ width: s, height: s }} />
+              <span
+                className="size-dot"
+                style={{ width: s, height: s, backgroundColor: color }}
+              />
             </button>
           ))}
         </div>

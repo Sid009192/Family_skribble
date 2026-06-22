@@ -86,12 +86,13 @@ export function Lobby({ api, meId, onOpenAdmin }: Props) {
           </button>
           <button
             type="button"
-            className="secondary invite-btn"
+            className={`secondary invite-btn${copied ? " copied" : ""}`}
             onClick={copyCode}
             title="Copy room code"
           >
             <img src="/img/link.svg" alt="" className="invite-link-icon" />
             {copied ? "Copied!" : "Invite"}
+            {copied && <span className="copy-burst" aria-hidden="true" />}
           </button>
         </div>
 

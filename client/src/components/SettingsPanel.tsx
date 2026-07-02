@@ -13,6 +13,7 @@
  * The server validates/clamps every change, so this component is permissive.
  */
 
+import { useEffect, useState } from "react";
 import { SETTINGS_LIMITS } from "@shared/types";
 import type { Settings } from "@shared/types";
 import type { SettingsUpdate } from "@shared/events";
@@ -144,6 +145,32 @@ function SettingRow({
   disabled?: boolean;
   onChange: (v: number) => void;
 }) {
+  // The field edits its OWN text while focused, so the user can freely clear
+  // it and retype (mobile keypads especially — no arrow buttons to fall back
+  // on). We only clamp + push the change up once they're done editing
+  // (blur / Enter), instead of on every keystroke, so a mid-typing empty
+  // field doesn't get instantly overwritten by the server's clamped value.
+  const [draft, setDraft] = useState(String(value));
+  const [focused, setFocused] = useState(false);
+
+  // Pick up server-confirmed changes (ours or another admin's) — but only
+  // while we're not actively editing, so we never clobber in-progress typing.
+  useEffect(() => {
+    if (!focused) setDraft(String(value));
+  }, [value, focused]);
+
+  function commit() {
+    setFocused(false);
+    const n = Number(draft.trim());
+    if (draft.trim() === "" || !Number.isFinite(n)) {
+      setDraft(String(value)); // nothing usable typed — revert, no change sent
+      return;
+    }
+    const clamped = Math.min(limit.max, Math.max(limit.min, Math.round(n)));
+    setDraft(String(clamped));
+    if (clamped !== value) onChange(clamped);
+  }
+
   return (
     <div className="setting-row">
       <img className="setting-icon" src={`/img/${icon}`} alt="" />
@@ -151,12 +178,17 @@ function SettingRow({
       <input
         type="number"
         className="setting-number"
-        value={value}
+        value={draft}
         min={limit.min}
         max={limit.max}
         step={step}
         disabled={disabled}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onFocus={() => setFocused(true)}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+        }}
       />
     </div>
   );

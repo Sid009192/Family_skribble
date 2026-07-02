@@ -25,6 +25,7 @@ import { socket } from "./socket";
 // In a production build the entire dev mock module is tree-shaken away.
 import type { MockBundle } from "./dev/mockRoom";
 import type { IncomingJoinRequest } from "./useRoom";
+import type { ChatMessage } from "@shared/types";
 
 // TEMP DEMO ONLY — shows the JoinRequestToast with fake data via ?joinreq=1,
 // since it's normally only driven by a real second player. Remove after demo.
@@ -88,6 +89,29 @@ export function App() {
   const demoJoinRequests =
     import.meta.env.DEV && new URLSearchParams(window.location.search).get("joinreq") === "1";
 
+  // TEMP DEMO ONLY — simulates new chat lines arriving so ChatToasts animates
+  // in (it only reacts to messages added AFTER mount, so the mock's static
+  // history alone shows nothing). Remove after demo.
+  const demoChatToast =
+    import.meta.env.DEV && new URLSearchParams(window.location.search).get("chattoast") === "1";
+  const [demoExtraMessages, setDemoExtraMessages] = useState<ChatMessage[]>([]);
+  useEffect(() => {
+    if (!demoChatToast) return;
+    const t1 = setTimeout(() => {
+      setDemoExtraMessages((prev) => [...prev, { kind: "correct", name: "Mom", text: "Mom guessed the word!" }]);
+    }, 1500);
+    const t2 = setTimeout(() => {
+      setDemoExtraMessages((prev) => [...prev, { kind: "system", name: "", text: "Robin joined the room!" }]);
+    }, 4000);
+    const t3 = setTimeout(() => {
+      setDemoExtraMessages((prev) => [...prev, { kind: "normal", name: "Pari", text: "nice one!" }]);
+    }, 6500);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, [demoChatToast]);
+  const effectiveApi = demoChatToast
+    ? { ...api, messages: [...api.messages, ...demoExtraMessages] }
+    : api;
+
   let screen;
   if (!api.room) {
     screen = (
@@ -107,7 +131,7 @@ export function App() {
   } else if (api.room.phase === "lobby") {
     screen = <Lobby api={api} meId={meId} onOpenAdmin={openAdmin} />;
   } else {
-    screen = <Game api={api} meId={meId} onOpenAdmin={openAdmin} />;
+    screen = <Game api={effectiveApi} meId={meId} onOpenAdmin={openAdmin} />;
   }
 
   // Show a "reconnecting" overlay when OUR socket drops while we're in a room.

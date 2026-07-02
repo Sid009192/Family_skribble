@@ -86,6 +86,18 @@ const ADMIN_UNLOCK_MAX_ATTEMPTS = 3;
 
 // When all players in a room disconnect, we wait this long before deleting it.
 const EMPTY_ROOM_TTL_MS = 30_000;
+
+// How long the host has to respond to a join request before it auto-denies.
+const JOIN_REQUEST_TTL_MS = 30_000;
+
+interface PendingJoinRequest {
+  socketId: string;
+  name: string;
+  avatar: import("@shared/types").Avatar;
+  roomCode: string;
+  timer: ReturnType<typeof setTimeout>;
+}
+const pendingJoinRequests = new Map<string, PendingJoinRequest>();
 const emptyRoomTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 function scheduleEmptyRoomCleanup(code: string): void {
@@ -513,6 +525,126 @@ io.on("connection", (socket) => {
     kickFromRoom(code, targetId, "The host removed you from the room.");
   });
 
+  // --- Join an active (in-progress) game -----------------------------------
+  socket.on("requestJoinActive", (payload, callback) => {
+    const code = cleanRoomCode(payload?.code);
+    const name = cleanName(payload?.name);
+    if (!name) return callback({ ok: false, error: "Please enter a valid name." });
+    const avatar = cleanAvatar(payload?.avatar);
+
+    const room = getRoom(code);
+    if (!room) return callback({ ok: false, error: "Room not found." });
+    if (!room.isPublic) return callback({ ok: false, error: "Room not found." });
+
+    // Already in a different room — evict first.
+    if (socket.data.roomCode && socket.data.roomCode !== code) handleLeave();
+
+    // Case A: a disconnected slot with the same name → auto-reconnect.
+    const slot = room.players.find(
+      (p) => !p.connected && p.name.toLowerCase() === name.toLowerCase()
+    );
+    if (slot) {
+      const oldId = slot.id;
+      const updatedRoom = reconnectPlayer(code, oldId, socket.id);
+      if (updatedRoom) {
+        const tok = generateToken();
+        saveSession(tok, socket.id, code, slot.name, slot.avatar);
+        socket.data.roomCode = code;
+        socket.join(code);
+        onPlayerReconnected(code, oldId, socket.id);
+        io.to(code).emit("playerReconnected", { oldId, newId: socket.id, name: slot.name });
+        broadcastSystem(code, `${slot.name} reconnected!`);
+        io.to(code).emit("roomState", updatedRoom);
+        socket.emit("canvasState", getOps(code));
+        socket.emit("sessionToken", tok);
+        broadcastRoomList();
+        console.log(`[rejoin] ${slot.name} reconnected to active game ${code}`);
+        return callback({ ok: true, room: updatedRoom });
+      }
+      return callback({ ok: false, error: "Reconnect failed." });
+    }
+
+    // Case B: lobby room — just add them normally.
+    if (room.phase === "lobby") {
+      const outcome = addPlayer(code, socket.id, name, avatar);
+      if (!outcome.ok || !outcome.room) return callback(outcome);
+      socket.data.roomCode = code;
+      socket.join(code);
+      const tok = generateToken();
+      saveSession(tok, socket.id, code, name, avatar);
+      socket.emit("sessionToken", tok);
+      io.to(code).emit("roomState", outcome.room);
+      socket.emit("canvasState", getOps(code));
+      broadcastRoomList();
+      return callback({ ok: true, room: outcome.room });
+    }
+
+    // Case C: active game, new player — ask the host.
+    const cap = Math.min(room.settings.maxPlayers, 12);
+    const connected = room.players.filter((p) => p.connected).length;
+    if (connected >= cap) return callback({ ok: false, error: "Room is full." });
+
+    const requestId = generateToken().slice(0, 16);
+    const timer = setTimeout(() => {
+      pendingJoinRequests.delete(requestId);
+      io.to(socket.id).emit("joinDenied", { reason: "Host did not respond in time." });
+    }, JOIN_REQUEST_TTL_MS);
+    pendingJoinRequests.set(requestId, { socketId: socket.id, name, avatar, roomCode: code, timer });
+
+    // Notify the host and every admin in the room.
+    io.to(room.hostId).emit("joinRequest", { requestId, name, avatar });
+    for (const [sid, s] of io.sockets.sockets) {
+      if (s.data.isAdmin && s.data.roomCode === code && sid !== room.hostId) {
+        s.emit("joinRequest", { requestId, name, avatar });
+      }
+    }
+
+    callback({ ok: false, pending: true });
+  });
+
+  // --- Host / admin responds to a join request ----------------------------
+  socket.on("respondJoinRequest", (payload) => {
+    const requestId = payload?.requestId;
+    const approved = payload?.approved;
+    if (typeof requestId !== "string") return;
+
+    const req = pendingJoinRequests.get(requestId);
+    if (!req) return;
+
+    const room = getRoom(req.roomCode);
+    if (!room || (room.hostId !== socket.id && !socket.data.isAdmin)) return;
+
+    clearTimeout(req.timer);
+    pendingJoinRequests.delete(requestId);
+
+    if (!approved) {
+      io.to(req.socketId).emit("joinDenied", { reason: "The host declined your request." });
+      return;
+    }
+
+    const requesterSocket = io.sockets.sockets.get(req.socketId);
+    if (!requesterSocket) return; // they left while waiting
+
+    const outcome = addPlayer(req.roomCode, req.socketId, req.name, req.avatar);
+    if (!outcome.ok || !outcome.room) {
+      io.to(req.socketId).emit("joinDenied", { reason: outcome.error ?? "Couldn't add you to the room." });
+      return;
+    }
+
+    requesterSocket.data.roomCode = req.roomCode;
+    requesterSocket.join(req.roomCode);
+    const tok = generateToken();
+    saveSession(tok, req.socketId, req.roomCode, req.name, req.avatar);
+    requesterSocket.emit("sessionToken", tok);
+    io.to(req.roomCode).emit("roomState", outcome.room);
+    requesterSocket.emit("joinApproved", { room: outcome.room });
+    requesterSocket.emit("canvasState", getOps(req.roomCode));
+    if (outcome.room.phase !== "lobby") onPlayerJoined(req.roomCode, req.socketId);
+    broadcastSystem(req.roomCode, `${req.name} joined the game!`);
+    broadcastRoomList();
+    console.log(`[join-active] ${req.name} approved into ${req.roomCode}`);
+  });
+
   socket.on("leaveRoom", handleLeave);
 
   socket.on("disconnect", (reason) => {
@@ -549,6 +681,14 @@ io.on("connection", (socket) => {
       broadcastRoomList();
     } else {
       // Not in a room — nothing to do.
+    }
+
+    // Clean up any pending join request this socket had (they disconnected while waiting).
+    for (const [requestId, req] of pendingJoinRequests) {
+      if (req.socketId === socket.id) {
+        clearTimeout(req.timer);
+        pendingJoinRequests.delete(requestId);
+      }
     }
   });
 });

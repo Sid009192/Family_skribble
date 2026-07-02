@@ -89,7 +89,7 @@ export function getRoom(code: string): Room | undefined {
 export function listPublicRooms(limit = 5): RoomSummary[] {
   const summaries: RoomSummary[] = [];
   for (const room of rooms.values()) {
-    if (!room.isPublic || room.phase !== "lobby") continue;
+    if (!room.isPublic) continue;
     const host = room.players.find((p) => p.id === room.hostId);
     summaries.push({
       code: room.code,

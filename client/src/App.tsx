@@ -17,12 +17,20 @@ import { Home } from "./screens/Home";
 import { Lobby } from "./screens/Lobby";
 import { Game } from "./screens/Game";
 import { AdminModal } from "./components/AdminModal";
+import { JoinRequestToast } from "./components/JoinRequestToast";
 import { Intro } from "./components/Intro";
 import { socket } from "./socket";
 
 // Type-only import — TypeScript strips this at compile, no runtime reference.
 // In a production build the entire dev mock module is tree-shaken away.
 import type { MockBundle } from "./dev/mockRoom";
+import type { IncomingJoinRequest } from "./useRoom";
+
+// TEMP DEMO ONLY — shows the JoinRequestToast with fake data via ?joinreq=1,
+// since it's normally only driven by a real second player. Remove after demo.
+const FAKE_JOIN_REQUESTS: IncomingJoinRequest[] = [
+  { requestId: "demo-1", name: "Grandpa Ravi", avatar: { color: 7, eyes: 3, mouth: 5 } },
+];
 
 // The splash plays once per browser tab session: a flag in sessionStorage means
 // reloads/reconnects within the same session skip straight to the app.
@@ -76,6 +84,10 @@ export function App() {
   // screen under test.
   const introVisible = showIntro && !devBundle;
 
+  // TEMP DEMO ONLY — remove after demo.
+  const demoJoinRequests =
+    import.meta.env.DEV && new URLSearchParams(window.location.search).get("joinreq") === "1";
+
   let screen;
   if (!api.room) {
     screen = (
@@ -83,8 +95,11 @@ export function App() {
         connected={api.connected}
         notice={api.notice}
         roomList={api.roomList}
+        pendingApproval={api.pendingApproval}
         onCreate={api.createRoom}
         onJoin={api.joinRoom}
+        onJoinActive={api.requestJoinActive}
+        onCancelApproval={api.cancelPendingApproval}
         onDismissNotice={api.clearNotice}
         onOpenAdmin={openAdmin}
       />
@@ -109,6 +124,14 @@ export function App() {
       {realApi.gameEndedWhileAway && (
         <GameEndedBanner onDismiss={realApi.dismissGameEndedWhileAway} />
       )}
+      <JoinRequestToast
+        requests={demoJoinRequests ? FAKE_JOIN_REQUESTS : realApi.incomingJoinRequests}
+        onRespond={
+          demoJoinRequests
+            ? (id, approved) => console.log("[demo] respond", id, approved)
+            : realApi.respondJoinRequest
+        }
+      />
     </>
   );
 }

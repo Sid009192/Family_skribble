@@ -29,8 +29,11 @@ interface Props {
   connected: boolean;
   notice: string | null;
   roomList: RoomSummary[];
+  pendingApproval: boolean;
   onCreate: (name: string, avatar: AvatarType, isPublic: boolean) => Promise<JoinResult>;
   onJoin: (code: string, name: string, avatar: AvatarType) => Promise<JoinResult>;
+  onJoinActive: (code: string, name: string, avatar: AvatarType) => Promise<JoinResult>;
+  onCancelApproval: () => void;
   onDismissNotice: () => void;
   onOpenAdmin: () => void;
 }
@@ -49,8 +52,11 @@ export function Home({
   connected,
   notice,
   roomList,
+  pendingApproval,
   onCreate,
   onJoin,
+  onJoinActive,
+  onCancelApproval,
   onDismissNotice,
   onOpenAdmin,
 }: Props) {
@@ -191,17 +197,23 @@ export function Home({
         {error && <p className="hint error">{error}</p>}
       </div>
 
-      {joinOpen && (
+      {(joinOpen || pendingApproval) && (
         <JoinModal
           roomList={roomList}
           canJoin={canAct}
+          pendingApproval={pendingApproval}
           onJoin={async (code) => {
             const res = await run(() => onJoin(code, trimmedName, avatar));
-            // Only close on success — failed joins stay in the modal so the
-            // user can see the error and try a different room/code.
             if (res.ok) setJoinOpen(false);
             return res;
           }}
+          onJoinActive={async (code) => {
+            const res = await onJoinActive(code, trimmedName, avatar);
+            if (res.ok) setJoinOpen(false);
+            if (!res.ok && !res.pending) setError(res.error ?? "Couldn't join that room.");
+            return res;
+          }}
+          onCancelApproval={onCancelApproval}
           onClose={() => setJoinOpen(false)}
         />
       )}

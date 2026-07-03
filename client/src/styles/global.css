@@ -845,6 +845,45 @@ button.ghost {
   cursor: not-allowed;
 }
 
+.difficulty-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.6vh;
+}
+
+.difficulty-options {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+}
+
+.difficulty-btn {
+  flex: 1;
+  font-size: 0.72em;
+  font-weight: 700;
+  padding: 3px 2px;
+  border-radius: 6px;
+  border: 1px solid var(--panel-border);
+  background: #ffffff;
+  color: #111;
+  font-family: inherit;
+}
+
+.difficulty-btn.selected {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.difficulty-btn:disabled {
+  background: #f3f3f3;
+  color: #444;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
 .custom-only-toggle input:disabled {
   cursor: not-allowed;
 }
@@ -3568,6 +3607,18 @@ button.ghost {
 .setting-number {
   height: 34px;
   font-size: 0.9rem;
+}
+
+.difficulty-row {
+  min-height: 48px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.difficulty-btn {
+  height: 34px;
+  font-size: 0.8rem;
 }
 
 .custom-words-head {

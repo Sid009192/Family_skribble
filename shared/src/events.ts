@@ -16,6 +16,7 @@
 import type {
   Avatar,
   ChatMessage,
+  Difficulty,
   DrawOp,
   Point,
   Room,
@@ -49,6 +50,7 @@ export interface SettingsUpdate {
   hintCount?: number;
   customWordsOnly?: boolean;
   customWords?: string;
+  difficulty?: Difficulty;
 }
 
 /** Messages the CLIENT can send TO the server. */

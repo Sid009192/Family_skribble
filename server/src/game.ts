@@ -23,7 +23,7 @@ import { THUMBS_DRAWER_BONUS } from "@shared/types";
 import { getOps, resetCanvas } from "./canvas.js";
 import { getRoom } from "./rooms.js";
 import { cleanChat } from "./validate.js";
-import { DEFAULT_WORDS } from "./words.js";
+import { poolForDifficulty } from "./words/index.js";
 
 type IO = Server<
   ClientToServerEvents,
@@ -48,6 +48,11 @@ interface GameState {
   gained: Map<string, number>;
   paused: boolean;
   ticker?: ReturnType<typeof setInterval>;
+  /** Lowercased default words already drawn this game — kept out of future
+   *  choices so a session doesn't repeat itself. Custom words are exempt
+   *  (they must always be available) and this auto-recycles if a difficulty
+   *  band's pool ever runs dry. */
+  usedWords: Set<string>;
 }
 
 const games = new Map<string, GameState>();
@@ -93,6 +98,7 @@ export function startGame(code: string): void {
     guessed: new Set(),
     gained: new Map(),
     paused: false,
+    usedWords: new Set(),
   };
   games.set(code, g);
   room.round = 1;
@@ -458,7 +464,7 @@ function startTurnForDrawer(code: string, drawerId: string): void {
   g.revealed = new Set();
   g.guessed = new Set();
   g.gained = new Map();
-  g.choices = pickWords(room);
+  g.choices = pickWords(room, g);
 
   room.drawerId = drawerId;
   room.phase = "choosing";
@@ -479,6 +485,7 @@ function startDrawing(code: string, word: string): void {
   const g = games.get(code);
   if (!room || !g || room.phase !== "choosing") return;
   g.word = word;
+  g.usedWords.add(word.toLowerCase());
   g.revealed = new Set();
   room.phase = "drawing";
   room.timeLeft = room.settings.drawTime;
@@ -644,8 +651,14 @@ function broadcast(room: Room): void {
   io.to(room.code).emit("roomState", room);
 }
 
-/** Build the word pool from settings (custom-only when there are enough words). */
-function pickWords(room: Room): string[] {
+/**
+ * Build the word pool from settings (custom-only when there are enough words).
+ * Default words are filtered to the room's difficulty band and to words not
+ * already drawn this session; custom words always play regardless of either.
+ * If the filtered default pool is exhausted, it recycles (used-set clears)
+ * rather than starving the choices.
+ */
+function pickWords(room: Room, g: GameState): string[] {
   const n = room.settings.wordChoiceCount;
   const custom = room.settings.customWords;
   const useOnly = room.settings.customWordsOnly && custom.length >= n;
@@ -654,8 +667,15 @@ function pickWords(room: Room): string[] {
   if (useOnly) {
     pool = [...custom];
   } else {
-    pool = [...DEFAULT_WORDS];
-    const seen = new Set(DEFAULT_WORDS.map((w) => w.toLowerCase()));
+    const defaults = poolForDifficulty(room.settings.difficulty);
+    let fresh = defaults.filter((w) => !g.usedWords.has(w.toLowerCase()));
+    if (fresh.length === 0) {
+      g.usedWords.clear(); // this difficulty band is exhausted — start it over
+      fresh = defaults;
+    }
+
+    pool = [...fresh];
+    const seen = new Set(defaults.map((w) => w.toLowerCase()));
     for (const w of custom) {
       if (!seen.has(w.toLowerCase())) {
         pool.push(w);

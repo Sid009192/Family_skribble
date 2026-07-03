@@ -14,8 +14,8 @@
  */
 
 import { useEffect, useState } from "react";
-import { SETTINGS_LIMITS } from "@shared/types";
-import type { Settings } from "@shared/types";
+import { DIFFICULTIES, SETTINGS_LIMITS } from "@shared/types";
+import type { Difficulty, Settings } from "@shared/types";
 import type { SettingsUpdate } from "@shared/events";
 
 interface Props {
@@ -81,6 +81,47 @@ export function SettingsGrid({ settings, editable, onChange }: Props) {
         disabled={!editable}
         onChange={editable ? (v) => onChange({ hintCount: v }) : noop}
       />
+      <DifficultyRow
+        value={settings.difficulty}
+        disabled={!editable}
+        onChange={editable ? (v) => onChange({ difficulty: v }) : noop}
+      />
+    </div>
+  );
+}
+
+const DIFFICULTY_LABELS: Record<Difficulty, string> = {
+  easy: "Easy",
+  medium: "Medium",
+  hard: "Hard",
+  mix: "Mix",
+};
+
+function DifficultyRow({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: Difficulty;
+  disabled: boolean;
+  onChange: (v: Difficulty) => void;
+}) {
+  return (
+    <div className="difficulty-row">
+      <span className="setting-label">Difficulty</span>
+      <div className="difficulty-options">
+        {DIFFICULTIES.map((d) => (
+          <button
+            key={d}
+            type="button"
+            className={`difficulty-btn${d === value ? " selected" : ""}`}
+            disabled={disabled}
+            onClick={() => onChange(d)}
+          >
+            {DIFFICULTY_LABELS[d]}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

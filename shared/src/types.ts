@@ -67,6 +67,14 @@ export interface Player {
 export type RoomPhase = "lobby" | "choosing" | "drawing" | "reveal" | "gameover";
 
 /** Host-configurable game settings. */
+/**
+ * How hard the default words are to draw/recognize. Bands overlap by one tier
+ * (e.g. "hard" still mixes in medium words) so a small pool never runs too
+ * repetitive — see DECISIONS.md ("Word difficulty levels").
+ */
+export type Difficulty = "easy" | "medium" | "hard" | "mix";
+export const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard", "mix"];
+
 export interface Settings {
   /** Max number of players allowed in the room. */
   maxPlayers: number;
@@ -82,6 +90,8 @@ export interface Settings {
   customWords: string[];
   /** If true, only the custom words are used (when there are enough of them). */
   customWordsOnly: boolean;
+  /** Which default-word difficulty band to draw from. Custom words always play regardless. */
+  difficulty: Difficulty;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -92,6 +102,7 @@ export const DEFAULT_SETTINGS: Settings = {
   hintCount: 2,
   customWords: [],
   customWordsOnly: false,
+  difficulty: "mix",
 };
 
 /** Allowed ranges for the numeric settings (server enforces these). */

@@ -12,6 +12,7 @@ import {
   CHAT_MAX,
   CUSTOM_WORD_MAX_LEN,
   CUSTOM_WORDS_MAX,
+  DIFFICULTIES,
   NAME_MAX,
   NAME_MIN,
   SETTINGS_LIMITS,
@@ -131,6 +132,11 @@ export function cleanSettings(current: Settings, update: SettingsUpdate): Settin
       update.customWords === undefined
         ? current.customWords
         : parseCustomWords(update.customWords),
+    difficulty:
+      typeof update.difficulty === "string" &&
+      (DIFFICULTIES as string[]).includes(update.difficulty)
+        ? (update.difficulty as Settings["difficulty"])
+        : current.difficulty,
   };
 }
 
